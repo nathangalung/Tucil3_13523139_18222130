@@ -1,192 +1,169 @@
 package ui;
 
+import algorithm.AS;
+import algorithm.GBFS;
+import algorithm.IDAS;
 import algorithm.PathFinder;
-import core.*;
-import heuristic.*;
-
+import algorithm.UCS;
+import core.Board;
+import core.FileParser;
+import core.GameState;
+import core.Move;
+import heuristic.BP;
+import heuristic.DB;
+import heuristic.Heuristic;
+import heuristic.MD;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * Command-line interface
  */
 public class CLI {
-    private static final String ANSI_RESET = "\u001B[0m";
-    private static final String ANSI_RED = "\u001B[31m";
-    private static final String ANSI_GREEN = "\u001B[32m";
+    private static final String ANSI_RESET  = "\u001B[0m";
+    private static final String ANSI_RED    = "\u001B[31m";
+    private static final String ANSI_GREEN  = "\u001B[32m";
     private static final String ANSI_YELLOW = "\u001B[33m";
-    
+
+    /**
+     * Entry point for CLI execution
+     */
+    public static void main(String[] args) {
+        CLI.run(args);
+    }
+
     /**
      * Run CLI solver
      */
     public static void run(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        
         try {
-            // Get the puzzle file
+            // Puzzle file
             System.out.print("Enter the puzzle file name: ");
             String fileName = scanner.nextLine().trim();
-            
-            // Handle file path construction
             String filePath = getFilePath(fileName);
-            
-            FileParser parser = new FileParser(filePath);
-            Board board = parser.parseFile();
-            GameState initialState = new GameState(board);
-            
-            // Select the algorithm
+
+            // Parse board
+            Board board = new FileParser(filePath).parseFile();
+            GameState start = new GameState(board);
+
+            // Algorithm selection
             System.out.println("Select the algorithm:");
             System.out.println("1. Uniform Cost Search (UCS)");
-            System.out.println("2. Greedy Best First Search (GBFS)");
+            System.out.println("2. Greedy Best-First Search (GBFS)");
             System.out.println("3. A* Search (AS)");
             System.out.println("4. Iterative Deepening A* (IDAS)");
             System.out.print("Enter your choice: ");
             int algoChoice = scanner.nextInt();
-            
-            // Select the heuristic
-            System.out.println("Select the heuristic:");
-            System.out.println("1. Manhattan Distance (MD)");
-            System.out.println("2. Blocking Pieces (BP)");
-            System.out.println("3. Distance + Blocking (DB)");
-            System.out.print("Enter your choice: ");
-            int heurChoice = scanner.nextInt();
-            
-            // Create the heuristic
-            Heuristic heuristic;
-            switch (heurChoice) {
-                case 1:
-                    heuristic = new MD();
-                    break;
-                case 2:
-                    heuristic = new BP();
-                    break;
-                case 3:
-                    heuristic = new DB();
-                    break;
-                default:
-                    heuristic = new MD();
+
+            // Heuristic only for non-UCS algorithms
+            Heuristic heuristic = null;
+            if (algoChoice != 1) {
+                System.out.println("Select the heuristic:");
+                System.out.println("1. Manhattan Distance (MD)");
+                System.out.println("2. Blocking Pieces (BP)");
+                System.out.println("3. Distance + Blocking (DB)");
+                System.out.print("Enter your choice: ");
+                int heurChoice = scanner.nextInt();
+                switch (heurChoice) {
+                    case 2 -> heuristic = new BP();
+                    case 3 -> heuristic = new DB();
+                    default -> heuristic = new MD();
+                }
+            } else {
+                System.out.println("[UCS] heuristic ignored");
             }
-            
-            // Create and run the algorithm
-            PathFinder pathFinder;
-            switch (algoChoice) {
-                case 1:
-                    pathFinder = new algorithm.UCS(heuristic);
-                    break;
-                case 2:
-                    pathFinder = new algorithm.GBFS(heuristic);
-                    break;
-                case 3:
-                    pathFinder = new algorithm.AS(heuristic);
-                    break;
-                case 4:
-                    pathFinder = new algorithm.IDAS(heuristic);
-                    break;
-                default:
-                    pathFinder = new algorithm.AS(heuristic);
-            }
-            
+
             // Display initial board
             System.out.println("\nPapan Awal");
-            printBoard(board, (char)0);
-            
-            // Run the algorithm
-            GameState solution = pathFinder.findPath(initialState);
-            
+            printBoard(board, '\0');
+
+            // Solve
+            GameState solution;
+            int nodesVisited;
+            long execTime;
+
+            if (algoChoice == 1) {
+                // UCS does not use heuristic
+                UCS solver = new UCS();
+                solution    = solver.solve(start);
+                nodesVisited= solver.getNodesVisited();
+                execTime    = solver.getExecutionTime();
+            } else {
+                // GBFS, AS, IDAS use heuristic
+                PathFinder solver;
+                switch (algoChoice) {
+                    case 2 -> solver = new GBFS(heuristic);
+                    case 3 -> solver = new AS(heuristic);
+                    case 4 -> solver = new IDAS(heuristic);
+                    default -> solver = new AS(heuristic);
+                }
+                solution    = solver.findPath(start);
+                nodesVisited= solver.getNodesVisited();
+                execTime    = solver.getExecutionTime();
+            }
+
+            // Output results
             if (solution != null) {
-                // Print the solution
                 List<GameState> path = solution.getSolutionPath();
-                
-                System.out.println("\nSolusi ditemukan dengan " + (path.size() - 1) + " gerakan:");
-                
+                System.out.println("\nSolusi ditemukan dengan " + (path.size() - 1) + " langkah:");
                 for (int i = 1; i < path.size(); i++) {
                     GameState state = path.get(i);
                     Move move = state.getLastMove();
-                    
-                    System.out.println("\nGerakan " + i + ": " + move);
+                    System.out.println("\nLangkah " + i + ": " + move);
                     printBoard(state.getBoard(), move.getPiece().getId());
                 }
-                
-                // Print statistics
                 System.out.println("\nStatistik:");
-                System.out.println("Algoritma: " + pathFinder.getName());
-                System.out.println("Heuristic: " + heuristic.getName());
-                System.out.println("Jumlah node yang diperiksa: " + pathFinder.getNodesVisited());
-                System.out.println("Waktu eksekusi: " + pathFinder.getExecutionTime() + " ms");
+                System.out.println("Algoritma              : " +
+                    (algoChoice == 1 ? "Uniform Cost Search" :
+                     algoChoice == 2 ? "Greedy Best-First Search" :
+                     algoChoice == 3 ? "A* Search" : "Iterative Deepening A*"));
+                if (algoChoice != 1) {
+                    System.out.println("Heuristic              : " + heuristic.getName());
+                }
+                System.out.println("Node visited           : " + nodesVisited);
+                System.out.println("Waktu eksekusi (ms)    : " + execTime);
             } else {
                 System.out.println("\nTidak ditemukan solusi!");
             }
-            
         } catch (IOException e) {
             System.err.println("Error: " + e.getMessage());
         } finally {
             scanner.close();
         }
     }
-    
-    /**
-     * Helper for file path handling
-     */
+
+    // Helper file path
     private static String getFilePath(String fileName) {
-        // If it's a full path, use it directly
-        if (fileName.contains("/") || fileName.contains("\\")) {
-            return fileName;
-        }
-        
-        // Add .txt extension if missing
-        if (!fileName.toLowerCase().endsWith(".txt")) {
-            fileName = fileName + ".txt";
-        }
-        
-        // Check in the test directory first
-        File testFile = new File("test" + File.separator + fileName);
-        if (testFile.exists()) {
-            return testFile.getAbsolutePath();
-        }
-        
-        // Try current directory with test subfolder
+        if (fileName.contains("/") || fileName.contains("\\")) return fileName;
+        if (!fileName.toLowerCase().endsWith(".txt")) fileName += ".txt";
+        File testFile = new File("test", fileName);
+        if (testFile.exists()) return testFile.getAbsolutePath();
         testFile = new File(System.getProperty("user.dir"), "test" + File.separator + fileName);
-        if (testFile.exists()) {
-            return testFile.getAbsolutePath();
-        }
-        
+        if (testFile.exists()) return testFile.getAbsolutePath();
         return fileName;
     }
-    
-    /**
-     * Print board with colored pieces
-     */
+
+    // Print board with ANSI colors
     private static void printBoard(Board board, char movedPiece) {
         char[][] grid = board.getGrid();
-        int rows = board.getRows();
-        int cols = board.getCols();
-        Piece primary = board.getPrimaryPiece();
-        
+        int rows = board.getRows(), cols = board.getCols();
+        var primary = board.getPrimaryPiece();
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                char cell = grid[i][j];
-                
-                if (cell == '.') {
-                    System.out.print(".");
-                } else if (primary != null && cell == primary.getId()) {
-                    // Highlight primary piece
-                    System.out.print(ANSI_RED + cell + ANSI_RESET);
-                } else if (movedPiece != 0 && cell == movedPiece) {
-                    // Highlight moved piece
-                    System.out.print(ANSI_YELLOW + cell + ANSI_RESET);
-                } else {
-                    System.out.print(cell);
-                }
+                char c = grid[i][j];
+                if (c == '.') System.out.print('.');
+                else if (primary != null && c == primary.getId()) System.out.print(ANSI_RED + c + ANSI_RESET);
+                else if (movedPiece != '\0' && c == movedPiece) System.out.print(ANSI_YELLOW + c + ANSI_RESET);
+                else System.out.print(c);
             }
             System.out.println();
         }
-        
-        // Mark the exit
-        int exitRow = board.getExitRow();
-        int exitCol = board.getExitCol();
+        int exitRow = board.getExitRow(), exitCol = board.getExitCol();
         if (exitRow >= 0 && exitCol >= 0) {
-            System.out.println("Exit at: (" + exitRow + ", " + exitCol + ") " + ANSI_GREEN + "K" + ANSI_RESET);
+            System.out.println("Exit at: (" + exitRow + "," + exitCol + ") " + ANSI_GREEN + 'K' + ANSI_RESET);
         }
     }
 }

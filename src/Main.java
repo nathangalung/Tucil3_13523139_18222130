@@ -1,19 +1,19 @@
 import ui.CLI;
 import ui.GUI;
 
-/**
- * Main application entry point
- */
 public class Main {
     public static void main(String[] args) {
-        if (args.length > 0 && args[0].equals("--cli")) {
-            // Use command line interface
+        boolean useCLI = false;
+        for (String arg : args) {
+            if ("--cli".equals(arg) || "-cli".equals(arg)) {
+                useCLI = true;
+                break;
+            }
+        }
+        if (useCLI) {
             CLI.run(args);
         } else {
-            // Use graphical interface
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                new GUI();
-            });
+            GUI.main(args);
         }
     }
 }
