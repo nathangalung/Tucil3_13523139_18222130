@@ -2,11 +2,10 @@ package ui;
 
 import core.Board;
 import core.Piece;
-
-import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.*;
 
 /**
  * GUI board rendering panel

@@ -134,12 +134,10 @@ public class GUI extends JFrame {
                 logArea.setText("Solving puzzle...\n");
             });
 
-            Board board    = boardPanel.getBoard();
-            GameState start = new GameState(board);
-
+            GameState start = new GameState(boardPanel.getBoard());
             List<GameState> path;
-            int    visited;
-            long   time;
+            int visited;
+            long time;
             String algoName;
             String heurName = null;
 
@@ -191,7 +189,7 @@ public class GUI extends JFrame {
 
     private void displaySolution(List<GameState> sol) {
         boardPanel.updateBoard(sol.get(0).getBoard());
-        Animation animation = new Animation(boardPanel, sol);
+        Animation animation = new Animation(boardPanel, sol, logArea);
         JPanel controls = animation.createControlPanel();
         for (Component c : solutionPanel.getComponents()) {
             if (c != boardPanel) solutionPanel.remove(c);
