@@ -5,28 +5,41 @@ import core.GameState;
 import core.Piece;
 
 /**
- * Manhattan Distance heuristic
+ * Manhattan Distance heuristic.
+ * Estimates moves to exit.
  */
 public class MD extends Heuristic {
     
     @Override
     public int evaluate(GameState state) {
         Board board = state.getBoard();
-        Piece primaryPiece = board.getPrimaryPiece();
+        Piece primary = board.getPrimaryPiece();
         
-        if (primaryPiece == null) {
-            return Integer.MAX_VALUE;
-        }
+        if (primary == null) return Integer.MAX_VALUE; // Should not happen
         
-        // Primary piece is horizontal
-        if (primaryPiece.isHorizontal()) {
-            int distance = board.getCols() - (primaryPiece.getCol() + primaryPiece.getSize());
-            return distance;
-        }
-        // Primary piece is vertical
-        else {
-            int distance = board.getRows() - (primaryPiece.getRow() + primaryPiece.getSize());
-            return distance;
+        int exitR = board.getExitRow();
+        int exitC = board.getExitCol();
+
+        if (primary.isHorizontal()) {
+            // Target column for right exit is 'cols', for left is -1.
+            // If exit is *within* grid, target is exitCol.
+            int targetCol = (exitC == board.getCols() || exitC == -1) ? exitC : exitC;
+            if (targetCol == board.getCols()) { // Exit right
+                 return Math.max(0, targetCol - (primary.getCol() + primary.getSize()));
+            } else if (targetCol == -1) { // Exit left
+                 return Math.max(0, primary.getCol() - targetCol);
+            } else { // Exit within grid
+                 return Math.abs(primary.getCol() - targetCol);
+            }
+        } else { // Vertical
+            int targetRow = (exitR == board.getRows() || exitR == -1) ? exitR : exitR;
+            if (targetRow == board.getRows()) { // Exit bottom
+                return Math.max(0, targetRow - (primary.getRow() + primary.getSize()));
+            } else if (targetRow == -1) { // Exit top
+                return Math.max(0, primary.getRow() - targetRow);
+            } else { // Exit within grid
+                return Math.abs(primary.getRow() - targetRow);
+            }
         }
     }
     

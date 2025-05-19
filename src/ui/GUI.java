@@ -12,190 +12,241 @@ import heuristic.BP;
 import heuristic.DB;
 import heuristic.Heuristic;
 import heuristic.MD;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.io.File;
 import java.util.List;
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
- * Graphical user interface
+ * Main graphical user interface.
  */
 public class GUI extends JFrame {
     private BoardPanel boardPanel;
     private JTextArea logArea;
-    private JPanel controlPanel;
-    private JPanel solutionPanel;
+    private JPanel solutionDisplayArea;
     private JButton solveButton;
-    private JComboBox<String> algoCombo;
-    private JComboBox<String> heuristicCombo;
+    private JComboBox<String> algoSelector;
+    private JComboBox<String> heuristicSelector;
+    private JLabel currentFileLabel;
+    private Board currentBoard;
 
     public GUI() {
         setTitle("Rush Hour Solver");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(5, 5));
 
-        controlPanel  = createControlPanel();
-        solutionPanel = new JPanel(new BorderLayout());
-        logArea       = new JTextArea(8, 40);
-        logArea.setEditable(false);
-
-        add(controlPanel,  BorderLayout.NORTH);
-        add(solutionPanel, BorderLayout.CENTER);
-
-        // bottom area with log and footer
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(new JScrollPane(logArea), BorderLayout.CENTER);
-        JLabel footer = new JLabel("© 2025 Rush Hour Solver", SwingConstants.CENTER);
-        footer.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-        bottomPanel.add(footer, BorderLayout.SOUTH);
-        add(bottomPanel, BorderLayout.SOUTH);
-
+        setupControlPanel();
+        setupSolutionDisplayArea();
+        setupLogArea();
+        
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
     }
 
-    private JPanel createControlPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    // Setup top control panel.
+    private void setupControlPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 
         JButton fileButton = new JButton("Select Puzzle File");
-        JLabel fileLabel   = new JLabel("No file selected");
-        fileButton.addActionListener(e -> {
-            File testDir = new File("test");
-            if (!testDir.exists()) testDir = new File(System.getProperty("user.dir"), "test");
-            JFileChooser chooser = new JFileChooser(testDir);
-            chooser.setFileFilter(new FileNameExtensionFilter("Text Files", "txt"));
-            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File f = chooser.getSelectedFile();
-                fileLabel.setText(f.getName());
-                try {
-                    Board board = new FileParser(f.getAbsolutePath()).parseFile();
-                    displayBoard(board);
-                    logArea.setText("Puzzle loaded: " + f.getName() + "\n");
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this,
-                        "Error loading file: " + ex.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
-                    logArea.setText("Error: " + ex.getMessage() + "\n");
-                }
-            }
-        });
+        currentFileLabel = new JLabel("No file selected");
+        fileButton.addActionListener(e -> loadPuzzleFile());
 
-        algoCombo = new JComboBox<>(new String[]{
-            "Uniform Cost Search (UCS)",
-            "Greedy Best First Search (GBFS)",
-            "A* Search (AS)",
-            "Iterative Deepening A* (IDAS)"
+        algoSelector = new JComboBox<>(new String[]{
+            "Uniform Cost Search", "Greedy Best-First", "A* Search", "Iterative Deepening A*"
         });
-        heuristicCombo = new JComboBox<>(new String[]{
-            "Manhattan Distance (MD)",
-            "Blocking Pieces (BP)",
-            "Distance + Blocking (DB)"
+        heuristicSelector = new JComboBox<>(new String[]{
+            "Manhattan Distance", "Blocking Pieces", "Distance + Blocking"
         });
-        algoCombo.addActionListener(e -> {
-            boolean ucs = algoCombo.getSelectedIndex() == 0;
-            heuristicCombo.setEnabled(!ucs);
-        });
-        heuristicCombo.setEnabled(algoCombo.getSelectedIndex() != 0);
+        algoSelector.addActionListener(e -> heuristicSelector.setEnabled(algoSelector.getSelectedIndex() != 0));
+        heuristicSelector.setEnabled(algoSelector.getSelectedIndex() != 0);
 
         solveButton = new JButton("Solve");
-        solveButton.addActionListener(e -> onSolve());
+        solveButton.addActionListener(e -> solvePuzzle());
+        solveButton.setEnabled(false);
 
         panel.add(fileButton);
-        panel.add(fileLabel);
+        panel.add(currentFileLabel);
         panel.add(new JLabel("Algorithm:"));
-        panel.add(algoCombo);
+        panel.add(algoSelector);
         panel.add(new JLabel("Heuristic:"));
-        panel.add(heuristicCombo);
+        panel.add(heuristicSelector);
         panel.add(solveButton);
-
-        return panel;
+        add(panel, BorderLayout.NORTH);
     }
 
-    private void onSolve() {
+    // Setup main board display.
+    private void setupSolutionDisplayArea() {
+        solutionDisplayArea = new JPanel(new BorderLayout());
+        // Initial empty board panel or placeholder
+        boardPanel = new BoardPanel(null); 
+        solutionDisplayArea.add(boardPanel, BorderLayout.CENTER);
+        add(solutionDisplayArea, BorderLayout.CENTER);
+    }
+
+    // Setup bottom log area.
+    private void setupLogArea() {
+        logArea = new JTextArea(8, 40);
+        logArea.setEditable(false);
+        logArea.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
+        JScrollPane scrollPane = new JScrollPane(logArea);
+        
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(scrollPane, BorderLayout.CENTER);
+        JLabel footer = new JLabel("© 2025 IF2211_TK3_13523139_18222130", SwingConstants.CENTER);
+        footer.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        bottomPanel.add(footer, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    // Load puzzle from file.
+    private void loadPuzzleFile() {
+        File testDir = new File(System.getProperty("user.dir"), "test");
+        JFileChooser chooser = new JFileChooser(testDir.exists() ? testDir : null);
+        chooser.setFileFilter(new FileNameExtensionFilter("Text Files (*.txt)", "txt"));
+        
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            currentFileLabel.setText(file.getName());
+            try {
+                currentBoard = new FileParser(file.getAbsolutePath()).parseFile();
+                displayBoard(currentBoard);
+                logArea.setText("Puzzle loaded: " + file.getName() + "\n");
+                solveButton.setEnabled(true);
+                // Clear previous solution animation controls
+                if (solutionDisplayArea.getComponentCount() > 1) {
+                    solutionDisplayArea.remove(solutionDisplayArea.getComponent(1));
+                    solutionDisplayArea.revalidate();
+                    solutionDisplayArea.repaint();
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "File Load Error", JOptionPane.ERROR_MESSAGE);
+                logArea.setText("Error loading " + file.getName() + ": " + ex.getMessage() + "\n");
+                currentBoard = null;
+                solveButton.setEnabled(false);
+            }
+        }
+    }
+    
+    // Update board display.
+    private void displayBoard(Board boardToDisplay) {
         if (boardPanel == null) {
-            JOptionPane.showMessageDialog(this,
-                "Please load a puzzle first.", "Error", JOptionPane.ERROR_MESSAGE);
+            boardPanel = new BoardPanel(boardToDisplay);
+            solutionDisplayArea.add(boardPanel, BorderLayout.CENTER);
+        } else {
+            boardPanel.updateBoard(boardToDisplay);
+        }
+        solutionDisplayArea.revalidate();
+        solutionDisplayArea.repaint();
+        pack();
+    }
+
+    // Solve the current puzzle.
+    private void solvePuzzle() {
+        if (currentBoard == null) {
+            JOptionPane.showMessageDialog(this, "Load puzzle first.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        solveButton.setEnabled(false);
+        logArea.setText("Solving puzzle...\n");
 
-        int algoIndex      = algoCombo.getSelectedIndex();
-        int heurIndex      = heuristicCombo.getSelectedIndex();
-        Heuristic heuristic = switch (heurIndex) {
+        int algoIdx = algoSelector.getSelectedIndex();
+        Heuristic selectedHeuristic = switch (heuristicSelector.getSelectedIndex()) {
             case 1 -> new BP();
             case 2 -> new DB();
             default -> new MD();
         };
 
         new Thread(() -> {
-            SwingUtilities.invokeLater(() -> {
-                solveButton.setEnabled(false);
-                logArea.setText("Solving puzzle...\n");
-            });
+            GameState initial = new GameState(currentBoard.copy());
+            GameState solutionState = null;
+            int nodes = 0;
+            long timeMs = 0;
+            String algoName = algoSelector.getSelectedItem().toString();
+            String heurName = heuristicSelector.getSelectedItem().toString();
 
-            GameState start = new GameState(boardPanel.getBoard());
-            List<GameState> path;
-            int visited;
-            long time;
-            String algoName;
-            String heurName = null;
-
-            if (algoIndex == 0) {
-                UCS solver = new UCS();
-                GameState sol = solver.solve(start);
-                path    = sol.getSolutionPath();
-                visited = solver.getNodesVisited();
-                time    = solver.getExecutionTime();
-                algoName = "Uniform Cost Search";
-            } else {
-                PathFinder solver = switch (algoIndex) {
-                    case 1 -> new GBFS(heuristic);
-                    case 2 -> new AS(heuristic);
-                    default -> new IDAS(heuristic);
-                };
-                GameState sol = solver.findPath(start);
-                path    = sol.getSolutionPath();
-                visited = solver.getNodesVisited();
-                time    = solver.getExecutionTime();
-                algoName = solver.getName();
-                heurName = heuristic.getName();
+            try {
+                if (algoIdx == 0) {
+                    UCS solver = new UCS();
+                    solutionState = solver.solve(initial);
+                    nodes = solver.getNodesVisited();
+                    timeMs = solver.getExecutionTime();
+                } else {
+                    PathFinder solver = switch (algoIdx) {
+                        case 1 -> new GBFS(selectedHeuristic);
+                        case 2 -> new AS(selectedHeuristic);
+                        case 3 -> new IDAS(selectedHeuristic);
+                        default -> throw new IllegalStateException("Invalid algorithm index.");
+                    };
+                    solutionState = solver.findPath(initial);
+                    nodes = solver.getNodesVisited();
+                    timeMs = solver.getExecutionTime();
+                }
+            } catch (Exception ex) {
+                 final String errorMsg = "Solver error: " + ex.getMessage();
+                 SwingUtilities.invokeLater(() -> {
+                    logArea.append(errorMsg + "\n");
+                    solveButton.setEnabled(true);
+                 });
+                 return;
             }
 
-            final List<GameState> solutionPath = path;
-            final int    nodesCount = visited;
-            final long   execTime   = time;
-            final String finalAlgo = algoName;
-            final String finalHeu  = heurName;
+            final GameState finalSolution = solutionState;
+            final int finalNodes = nodes;
+            final long finalTimeMs = timeMs;
+            final String finalHeurName = (algoIdx != 0) ? heurName : null;
 
             SwingUtilities.invokeLater(() -> {
-                displaySolution(solutionPath);
-                logArea.append("Solution found with " + (solutionPath.size()-1) + " moves\n");
-                logArea.append("Algorithm: " + finalAlgo + "\n");
-                if (finalHeu != null) logArea.append("Heuristic: " + finalHeu + "\n");
-                logArea.append("Nodes visited: " + nodesCount + "\n");
-                logArea.append("Execution time: " + execTime + " ms\n");
+                if (finalSolution != null) {
+                    List<GameState> path = finalSolution.getSolutionPath();
+                    displaySolutionAnimation(path);
+                    logArea.append("Solution: " + (path.size() - 1) + " moves.\n");
+                } else {
+                    logArea.append("No solution found.\n");
+                }
+                logArea.append("Algorithm: " + algoName + "\n");
+                if (finalHeurName != null) logArea.append("Heuristic: " + finalHeurName + "\n");
+                logArea.append("Nodes visited: " + finalNodes + "\n");
+                logArea.append("Time: " + finalTimeMs + " ms\n");
                 solveButton.setEnabled(true);
             });
         }).start();
     }
 
-    private void displayBoard(Board board) {
-        if (boardPanel != null) solutionPanel.remove(boardPanel);
-        boardPanel = new BoardPanel(board);
-        solutionPanel.add(boardPanel, BorderLayout.CENTER);
-        solutionPanel.revalidate(); solutionPanel.repaint(); pack();
-    }
+    // Display solution animation.
+    private void displaySolutionAnimation(List<GameState> solutionPath) {
+        if (solutionPath == null || solutionPath.isEmpty()) return;
+        
+        boardPanel.updateBoard(solutionPath.get(0).getBoard());
+        Animation animation = new Animation(boardPanel, solutionPath, logArea);
+        JPanel animControls = animation.createControlPanel();
 
-    private void displaySolution(List<GameState> sol) {
-        boardPanel.updateBoard(sol.get(0).getBoard());
-        Animation animation = new Animation(boardPanel, sol, logArea);
-        JPanel controls = animation.createControlPanel();
-        for (Component c : solutionPanel.getComponents()) {
-            if (c != boardPanel) solutionPanel.remove(c);
+        // Remove old animation controls if any
+        if (solutionDisplayArea.getComponentCount() > 1) {
+             Component lastComp = solutionDisplayArea.getComponent(solutionDisplayArea.getComponentCount() -1);
+             if (!(lastComp instanceof BoardPanel)) {
+                solutionDisplayArea.remove(lastComp);
+             }
         }
-        solutionPanel.add(controls, BorderLayout.SOUTH);
-        solutionPanel.revalidate(); solutionPanel.repaint(); pack();
+        solutionDisplayArea.add(animControls, BorderLayout.SOUTH);
+        solutionDisplayArea.revalidate();
+        solutionDisplayArea.repaint();
+        pack();
         animation.start();
     }
 

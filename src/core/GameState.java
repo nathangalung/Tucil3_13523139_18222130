@@ -1,52 +1,42 @@
 package core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * Represents current game configuration
+ * Represents a game state.
  */
 public class GameState {
-    private Board board;
-    private GameState parent;
-    private Move lastMove;
-    private int cost;
+    private final Board board;
+    private final GameState parent;
+    private final Move lastMove;
+    private final int cost; // g(n)
     
     public GameState(Board board) {
-        this.board = board;
-        this.parent = null;
-        this.lastMove = null;
-        this.cost = 0;
+        this(board, null, null, 0);
     }
     
     public GameState(Board board, GameState parent, Move lastMove) {
+        this(board, parent, lastMove, (parent != null ? parent.getCost() + 1 : 0));
+    }
+
+    private GameState(Board board, GameState parent, Move lastMove, int cost) {
         this.board = board;
         this.parent = parent;
         this.lastMove = lastMove;
-        this.cost = parent.getCost() + 1;
+        this.cost = cost;
     }
     
-    public Board getBoard() {
-        return board;
-    }
+    public Board getBoard() { return board; }
+    public GameState getParent() { return parent; }
+    public Move getLastMove() { return lastMove; }
+    public int getCost() { return cost; }
     
-    public GameState getParent() {
-        return parent;
-    }
-    
-    public Move getLastMove() {
-        return lastMove;
-    }
-    
-    public int getCost() {
-        return cost;
-    }
-    
-    /**
-     * Get all possible moves
-     */
+    // Get all valid moves.
     public List<Move> getPossibleMoves() {
         List<Move> moves = new ArrayList<>();
-        char[][] grid = board.getGrid();
+        char[][] grid = board.getGrid(); // Use a copy
         int rows = board.getRows();
         int cols = board.getCols();
         
@@ -56,132 +46,74 @@ public class GameState {
             int size = piece.getSize();
             
             if (piece.isHorizontal()) {
-                // Check left moves
-                int maxLeft = 0;
-                for (int i = c - 1; i >= 0; i--) {
-                    if (grid[r][i] == '.') {
-                        maxLeft++;
-                    } else {
-                        break;
-                    }
-                }
-                if (maxLeft > 0) {
-                    moves.add(new Move(piece, Move.LEFT, maxLeft));
-                }
+                // Check left
+                int maxSteps = 0;
+                for (int i = c - 1; i >= 0 && grid[r][i] == '.'; i--) maxSteps++;
+                if (maxSteps > 0) moves.add(new Move(piece, Move.LEFT, maxSteps));
                 
-                // Check right moves
-                int maxRight = 0;
-                for (int i = c + size; i < cols; i++) {
-                    if (grid[r][i] == '.') {
-                        maxRight++;
-                    } else {
-                        break;
-                    }
-                }
-                if (maxRight > 0) {
-                    moves.add(new Move(piece, Move.RIGHT, maxRight));
-                }
-            } else {
-                // Check up moves
-                int maxUp = 0;
-                for (int i = r - 1; i >= 0; i--) {
-                    if (grid[i][c] == '.') {
-                        maxUp++;
-                    } else {
-                        break;
-                    }
-                }
-                if (maxUp > 0) {
-                    moves.add(new Move(piece, Move.UP, maxUp));
-                }
+                // Check right
+                maxSteps = 0;
+                for (int i = c + size; i < cols && grid[r][i] == '.'; i++) maxSteps++;
+                if (maxSteps > 0) moves.add(new Move(piece, Move.RIGHT, maxSteps));
+            } else { // Vertical
+                // Check up
+                int maxSteps = 0;
+                for (int i = r - 1; i >= 0 && grid[i][c] == '.'; i--) maxSteps++;
+                if (maxSteps > 0) moves.add(new Move(piece, Move.UP, maxSteps));
                 
-                // Check down moves
-                int maxDown = 0;
-                for (int i = r + size; i < rows; i++) {
-                    if (grid[i][c] == '.') {
-                        maxDown++;
-                    } else {
-                        break;
-                    }
-                }
-                if (maxDown > 0) {
-                    moves.add(new Move(piece, Move.DOWN, maxDown));
-                }
+                // Check down
+                maxSteps = 0;
+                for (int i = r + size; i < rows && grid[i][c] == '.'; i++) maxSteps++;
+                if (maxSteps > 0) moves.add(new Move(piece, Move.DOWN, maxSteps));
             }
         }
-        
         return moves;
     }
     
-    /**
-     * Apply move to create new state
-     */
+    // Apply move, return new state.
     public GameState applyMove(Move move) {
         Board newBoard = board.copy();
-        List<Piece> pieces = newBoard.getPieces();
         Piece movingPiece = null;
-        
-        // Find the piece to move
-        for (Piece p : pieces) {
+        for (Piece p : newBoard.getPieces()) { // Find piece in new board
             if (p.getId() == move.getPiece().getId()) {
                 movingPiece = p;
                 break;
             }
         }
         
-        // Apply move
         if (movingPiece != null) {
             switch (move.getDirection()) {
-                case Move.UP:
-                    movingPiece.setRow(movingPiece.getRow() - move.getSteps());
-                    break;
-                case Move.RIGHT:
-                    movingPiece.setCol(movingPiece.getCol() + move.getSteps());
-                    break;
-                case Move.DOWN:
-                    movingPiece.setRow(movingPiece.getRow() + move.getSteps());
-                    break;
-                case Move.LEFT:
-                    movingPiece.setCol(movingPiece.getCol() - move.getSteps());
-                    break;
+                case Move.UP    -> movingPiece.setRow(movingPiece.getRow() - move.getSteps());
+                case Move.RIGHT -> movingPiece.setCol(movingPiece.getCol() + move.getSteps());
+                case Move.DOWN  -> movingPiece.setRow(movingPiece.getRow() + move.getSteps());
+                case Move.LEFT  -> movingPiece.setCol(movingPiece.getCol() - move.getSteps());
             }
+            newBoard.updateGrid();
         }
-        
-        newBoard.updateGrid();
         return new GameState(newBoard, this, move);
     }
     
-    /**
-     * Get solution path
-     */
+    // Reconstruct solution path.
     public List<GameState> getSolutionPath() {
         List<GameState> path = new ArrayList<>();
         GameState current = this;
-        
         while (current != null) {
-            path.add(0, current);
+            path.add(0, current); // Add to front
             current = current.getParent();
         }
-        
         return path;
     }
     
-    /**
-     * Equals based on board configuration
-     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GameState gameState = (GameState) o;
-        return board.toString().equals(gameState.board.toString());
+        return Objects.equals(board.toString(), gameState.board.toString()); // Board string for equality
     }
     
-    /**
-     * Hash based on board configuration
-     */
     @Override
     public int hashCode() {
-        return board.toString().hashCode();
+        return Objects.hash(board.toString()); // Board string for hash
     }
 }

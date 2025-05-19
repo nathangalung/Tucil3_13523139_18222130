@@ -3,11 +3,14 @@ package algorithm;
 import core.GameState;
 import core.Move;
 import heuristic.Heuristic;
-
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
- * A* search algorithm
+ * A* Search algorithm.
+ * Uses g(n) + h(n).
  */
 public class AS extends PathFinder {
     
@@ -19,14 +22,10 @@ public class AS extends PathFinder {
     public GameState findPath(GameState initialState) {
         startTimer();
         
-        // Priority queue based on f(n) = g(n) + h(n)
         PriorityQueue<GameState> openSet = new PriorityQueue<>(
-            (a, b) -> Integer.compare(
-                a.getCost() + heuristic.evaluate(a),
-                b.getCost() + heuristic.evaluate(b)
-            )
+            Comparator.comparingInt(s -> s.getCost() + heuristic.evaluate(s))
         );
-        Set<String> closedSet = new HashSet<>();
+        Set<String> closedSet = new HashSet<>(); // Visited board configurations
         
         openSet.add(initialState);
         
@@ -34,20 +33,15 @@ public class AS extends PathFinder {
             GameState current = openSet.poll();
             nodesVisited++;
             
-            // Check if goal state reached
             if (current.getBoard().isWin()) {
                 stopTimer();
-                return current;
+                return current; // Solution found
             }
             
-            String boardState = current.getBoard().toString();
-            if (closedSet.contains(boardState)) {
-                continue;
-            }
+            String boardKey = current.getBoard().toString();
+            if (closedSet.contains(boardKey)) continue;
+            closedSet.add(boardKey);
             
-            closedSet.add(boardState);
-            
-            // Generate and enqueue possible moves
             for (Move move : current.getPossibleMoves()) {
                 GameState nextState = current.applyMove(move);
                 if (!closedSet.contains(nextState.getBoard().toString())) {
@@ -55,9 +49,8 @@ public class AS extends PathFinder {
                 }
             }
         }
-        
         stopTimer();
-        return null;
+        return null; // No solution
     }
     
     @Override

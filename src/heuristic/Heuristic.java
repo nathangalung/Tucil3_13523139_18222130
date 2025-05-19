@@ -1,19 +1,15 @@
+// filepath: c:\Users\NathanGalung\Documents\Kuliah\sem6\stima\Tucil\IF2211_TK3_13523139_18222130\src\heuristic\Heuristic.java
 package heuristic;
 
-import core.Board;
 import core.GameState;
 
 /**
- * Base heuristic interface
+ * Abstract base for heuristics.
  */
 public abstract class Heuristic {
-    /**
-     * Calculate heuristic value
-     */
+    // Evaluate game state.
     public abstract int evaluate(GameState state);
     
-    /**
-     * Get heuristic name
-     */
+    // Get heuristic name.
     public abstract String getName();
 }

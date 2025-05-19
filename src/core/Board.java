@@ -1,229 +1,219 @@
 package core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Rush Hour game board
+ * Represents the game board.
  */
 public class Board {
-    private int rows;
-    private int cols;
-    private char[][] grid;
-    private List<Piece> pieces;
+    private final int rows;
+    private final int cols;
+    private final char[][] grid; // Logical game grid
+    private final List<Piece> pieces;
     private int exitRow;
     private int exitCol;
+    private final boolean[] isSpaceOnlyRow; // For rendering
+    private final boolean[] isSpaceOnlyCol; // For rendering
     
     public Board(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
         this.grid = new char[rows][cols];
         this.pieces = new ArrayList<>();
-        this.exitRow = -1;
-        this.exitCol = -1;
+        this.exitRow = -1; // Default: no exit
+        this.exitCol = -1; // Default: no exit
+        this.isSpaceOnlyRow = new boolean[rows];
+        this.isSpaceOnlyCol = new boolean[cols];
         
-        // Initialize empty grid
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                grid[i][j] = '.';
-            }
+        for (char[] rowGrid : this.grid) {
+            Arrays.fill(rowGrid, '.'); // Init empty
         }
     }
+
+    // Set exit location.
+    public void setExit(int r, int c) {
+        this.exitRow = r;
+        this.exitCol = c;
+    }
     
-    /**
-     * Setup board from configuration
-     */
-    public void initialize(char[][] configuration) {
+    // Initialize from configuration.
+    public void initialize(char[][] originalConfiguration) {
         Map<Character, List<int[]>> piecePositions = new HashMap<>();
         
-        // Scan the board to find piece positions and exit
+        // Populate logical grid
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                char c = configuration[i][j];
-                if (c == '.') {
-                    grid[i][j] = '.';
-                } else if (c == 'K') {
-                    // Mark the exit position but don't include it in the grid
-                    exitRow = i;
-                    exitCol = j;
-                    grid[i][j] = '.';
-                } else {
-                    grid[i][j] = c;
-                    if (!piecePositions.containsKey(c)) {
-                        piecePositions.put(c, new ArrayList<>());
-                    }
-                    piecePositions.get(c).add(new int[]{i, j});
+                char c = originalConfiguration[i][j];
+                if (c == ' ' || c == '\0') {
+                    this.grid[i][j] = '.';
+                } else if (c != '.') { // Piece
+                    this.grid[i][j] = c; 
+                    piecePositions.computeIfAbsent(c, k -> new ArrayList<>()).add(new int[]{i, j});
+                } else { // Explicit '.'
+                    this.grid[i][j] = '.';
                 }
             }
         }
         
-        // Create pieces from positions
+        // Create piece objects
         for (Map.Entry<Character, List<int[]>> entry : piecePositions.entrySet()) {
             char id = entry.getKey();
             List<int[]> positions = entry.getValue();
-            boolean isPrimary = (id == 'P');
-            
-            // Sort positions by row and column
-            positions.sort((a, b) -> {
-                if (a[0] != b[0]) return a[0] - b[0];
-                return a[1] - b[1];
-            });
+            if (positions.isEmpty()) continue;
+
+            positions.sort((a, b) -> (a[0] != b[0]) ? a[0] - b[0] : a[1] - b[1]);
             
             int size = positions.size();
             int startRow = positions.get(0)[0];
             int startCol = positions.get(0)[1];
-            boolean isHorizontal = true;
+            boolean isHorizontal = (size > 1) && (positions.get(0)[0] == positions.get(1)[0]);
             
-            // Determine orientation
-            if (size > 1) {
-                isHorizontal = positions.get(0)[0] == positions.get(1)[0];
-            }
-            
-            Piece piece = new Piece(id, isPrimary, isHorizontal, size, startRow, startCol);
-            pieces.add(piece);
+            pieces.add(new Piece(id, (id == 'P'), isHorizontal, size, startRow, startCol));
         }
-        
-        // If no exit is found, set a default exit position
-        if (exitRow == -1 || exitCol == -1) {
-            // Determine primary piece orientation and set exit accordingly
-            Piece primary = getPrimaryPiece();
-            if (primary != null) {
-                if (primary.isHorizontal()) {
-                    // Exit on right side
-                    exitRow = primary.getRow();
-                    exitCol = cols;
-                } else {
-                    // Exit on bottom side
-                    exitRow = rows;
-                    exitCol = primary.getCol();
+
+        // Determine space-only rows/cols
+        for (int i = 0; i < rows; i++) {
+            isSpaceOnlyRow[i] = true; 
+            for (int j = 0; j < cols; j++) {
+                if (originalConfiguration[i][j] != ' ') {
+                    isSpaceOnlyRow[i] = false;
+                    break;
                 }
             }
         }
+        for (int j = 0; j < cols; j++) {
+            isSpaceOnlyCol[j] = true;
+            for (int i = 0; i < rows; i++) {
+                if (originalConfiguration[i][j] != ' ') {
+                    isSpaceOnlyCol[j] = false;
+                    break;
+                }
+            }
+        }
+        
+        // Default exit if not set
+        if (this.exitRow == -1 && this.exitCol == -1) {
+            Piece primary = getPrimaryPiece();
+            if (primary != null) {
+                if (primary.isHorizontal()) {
+                    exitRow = primary.getRow();
+                    exitCol = (primary.getCol() + primary.getSize() / 2.0 > cols / 2.0) ? cols : -1;
+                } else {
+                    exitCol = primary.getCol();
+                    exitRow = (primary.getRow() + primary.getSize() / 2.0 > rows / 2.0) ? rows : -1;
+                }
+            }
+        }
+        updateGrid(); // Finalize grid
     }
+
+    // Is row for rendering only?
+    public boolean isRowSpaceOnly(int r) { return (r >= 0 && r < rows) && isSpaceOnlyRow[r]; }
+    // Is col for rendering only?
+    public boolean isColSpaceOnly(int c) { return (c >= 0 && c < cols) && isSpaceOnlyCol[c]; }
     
+    // Get the primary piece.
     public Piece getPrimaryPiece() {
         for (Piece piece : pieces) {
-            if (piece.isPrimary()) {
-                return piece;
-            }
+            if (piece.isPrimary()) return piece;
         }
         return null;
     }
     
+    // Get all pieces.
     public List<Piece> getPieces() {
-        return new ArrayList<>(pieces);
+        return new ArrayList<>(pieces); // Defensive copy
     }
     
-    public int getRows() {
-        return rows;
-    }
+    public int getRows() { return rows; }
+    public int getCols() { return cols; }
+    public int getExitRow() { return exitRow; }
+    public int getExitCol() { return exitCol; }
     
-    public int getCols() {
-        return cols;
-    }
-    
-    public int getExitRow() {
-        return exitRow;
-    }
-    
-    public int getExitCol() {
-        return exitCol;
-    }
-    
-    /**
-     * Update grid with pieces
-     */
+    // Update logical grid.
     public void updateGrid() {
-        // Clear grid
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                grid[i][j] = '.';
-            }
+        for (char[] rowGrid : this.grid) {
+            Arrays.fill(rowGrid, '.');
         }
-        
-        // Place pieces
         for (Piece piece : pieces) {
             int r = piece.getRow();
             int c = piece.getCol();
-            boolean isHorizontal = piece.isHorizontal();
-            
             for (int s = 0; s < piece.getSize(); s++) {
-                if (isHorizontal) {
-                    if (c + s < cols) {
-                        grid[r][c + s] = piece.getId();
-                    }
+                if (piece.isHorizontal()) {
+                    if (c + s >= 0 && c + s < cols && r >=0 && r < rows) grid[r][c + s] = piece.getId();
                 } else {
-                    if (r + s < rows) {
-                        grid[r + s][c] = piece.getId();
-                    }
+                    if (r + s >= 0 && r + s < rows && c >=0 && c < cols) grid[r + s][c] = piece.getId();
                 }
             }
         }
     }
     
+    // Get current grid state.
     public char[][] getGrid() {
-        return grid;
+        char[][] currentGrid = new char[rows][cols];
+        for(int i=0; i<rows; i++) {
+            System.arraycopy(this.grid[i], 0, currentGrid[i], 0, cols);
+        }
+        return currentGrid;
     }
     
-    /**
-     * Copy current board state
-     */
+    // Create a deep copy.
     public Board copy() {
-        Board copy = new Board(rows, cols);
-        copy.exitRow = this.exitRow;
-        copy.exitCol = this.exitCol;
+        Board newBoard = new Board(rows, cols);
+        newBoard.exitRow = this.exitRow;
+        newBoard.exitCol = this.exitCol;
         
-        for (Piece piece : pieces) {
-            copy.pieces.add(piece.copy());
+        for (Piece piece : this.pieces) {
+            newBoard.pieces.add(piece.copy());
         }
         
-        copy.updateGrid();
-        return copy;
+        for(int i=0; i<rows; i++) {
+            System.arraycopy(this.grid[i], 0, newBoard.grid[i], 0, cols);
+        }
+        System.arraycopy(this.isSpaceOnlyRow, 0, newBoard.isSpaceOnlyRow, 0, rows);
+        System.arraycopy(this.isSpaceOnlyCol, 0, newBoard.isSpaceOnlyCol, 0, cols);
+        
+        return newBoard;
     }
     
-    /**
-     * Check if game is won
-     */
+    // Check win condition.
     public boolean isWin() {
         Piece primary = getPrimaryPiece();
         if (primary == null) return false;
         
-        int primaryRow = primary.getRow();
-        int primaryCol = primary.getCol();
-        int primarySize = primary.getSize();
+        int pRow = primary.getRow();
+        int pCol = primary.getCol();
+        int pSize = primary.getSize();
         
-        // For horizontal primary pieces
         if (primary.isHorizontal()) {
-            // If exit is on the right edge
-            if (exitCol >= cols) {
-                return primaryCol + primarySize > cols - 1;
-            }
-            // If exit is elsewhere
-            return (primaryRow == exitRow && primaryCol + primarySize - 1 >= exitCol);
-        } 
-        // For vertical primary pieces
-        else {
-            // If exit is on the bottom edge
-            if (exitRow >= rows) {
-                return primaryRow + primarySize > rows - 1;
-            }
-            // If exit is elsewhere
-            return (primaryCol == exitCol && primaryRow + primarySize - 1 >= exitRow);
+            if (exitRow >= 0 && exitRow < rows && pRow != exitRow) return false; // Must align
+            if (exitCol == cols) return pRow == exitRow && (pCol + pSize >= cols); // Right edge
+            if (exitCol == -1) return pRow == exitRow && (pCol <= exitCol);       // Left edge
+            if (exitCol >= 0 && exitCol < cols) // Within grid
+                return pRow == exitRow && (pCol <= exitCol && (pCol + pSize - 1) >= exitCol);
+        } else { // Vertical
+            if (exitCol >= 0 && exitCol < cols && pCol != exitCol) return false; // Must align
+            if (exitRow == rows) return pCol == exitCol && (pRow + pSize >= rows); // Bottom edge
+            if (exitRow == -1) return pCol == exitCol && (pRow <= exitRow);       // Top edge
+            if (exitRow >= 0 && exitRow < rows) // Within grid
+                return pCol == exitCol && (pRow <= exitRow && (pRow + pSize - 1) >= exitRow);
         }
+        return false;
     }
     
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 sb.append(grid[i][j]);
             }
-            if (i < rows - 1) {
-                sb.append("\n");
-            }
+            if (i < rows - 1) sb.append("\n");
         }
-        
         return sb.toString();
     }
 }

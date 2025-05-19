@@ -1,19 +1,27 @@
+import javax.swing.SwingUtilities;
 import ui.CLI;
 import ui.GUI;
 
+/**
+ * Main application entry point.
+ * Launches CLI or GUI.
+ */
 public class Main {
     public static void main(String[] args) {
         boolean useCLI = false;
-        for (String arg : args) {
-            if ("--cli".equals(arg) || "-cli".equals(arg)) {
-                useCLI = true;
-                break;
+        if (args != null) {
+            for (String arg : args) {
+                if ("--cli".equalsIgnoreCase(arg) || "-cli".equalsIgnoreCase(arg)) {
+                    useCLI = true;
+                    break;
+                }
             }
         }
+
         if (useCLI) {
-            CLI.run(args);
+            CLI.run(); // CLI runs directly
         } else {
-            GUI.main(args);
+            SwingUtilities.invokeLater(GUI::new); // GUI on EDT
         }
     }
 }

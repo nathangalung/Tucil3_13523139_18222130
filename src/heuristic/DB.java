@@ -3,11 +3,12 @@ package heuristic;
 import core.GameState;
 
 /**
- * Distance + Blocking heuristic
+ * Distance + Blocking heuristic.
+ * Combines MD and BP.
  */
 public class DB extends Heuristic {
-    private MD mdHeuristic;
-    private BP bpHeuristic;
+    private final MD mdHeuristic;
+    private final BP bpHeuristic;
     
     public DB() {
         this.mdHeuristic = new MD();
@@ -16,11 +17,8 @@ public class DB extends Heuristic {
     
     @Override
     public int evaluate(GameState state) {
-        int distance = mdHeuristic.evaluate(state);
-        int blocking = bpHeuristic.evaluate(state);
-        
-        // Combine the two heuristics
-        return distance + 2 * blocking;
+        // Weighted sum
+        return mdHeuristic.evaluate(state) + bpHeuristic.evaluate(state);
     }
     
     @Override

@@ -1,60 +1,44 @@
 package algorithm;
 
 import core.GameState;
-import core.Move;
 import heuristic.Heuristic;
 
-import java.util.*;
-
 /**
- * Base pathfinding algorithm
+ * Abstract base for pathfinders.
  */
 public abstract class PathFinder {
-    protected Heuristic heuristic;
+    protected final Heuristic heuristic;
     protected int nodesVisited;
-    protected long startTime;
-    protected long endTime;
+    protected long executionTimeMillis;
     
     public PathFinder(Heuristic heuristic) {
         this.heuristic = heuristic;
-        this.nodesVisited = 0;
     }
     
-    /**
-     * Find path to solution
-     */
+    // Find path to solution.
     public abstract GameState findPath(GameState initialState);
     
-    /**
-     * Get algorithm name
-     */
+    // Get algorithm name.
     public abstract String getName();
     
-    /**
-     * Get nodes visited count
-     */
+    // Get nodes visited.
     public int getNodesVisited() {
         return nodesVisited;
     }
     
-    /**
-     * Get execution time in ms
-     */
+    // Get execution time (ms).
     public long getExecutionTime() {
-        return endTime - startTime;
+        return executionTimeMillis;
     }
     
-    /**
-     * Start time tracking
-     */
+    // Start timing search.
     protected void startTimer() {
-        startTime = System.currentTimeMillis();
+        this.nodesVisited = 0;
+        this.executionTimeMillis = System.currentTimeMillis();
     }
     
-    /**
-     * Stop time tracking
-     */
+    // Stop timing search.
     protected void stopTimer() {
-        endTime = System.currentTimeMillis();
+        this.executionTimeMillis = System.currentTimeMillis() - this.executionTimeMillis;
     }
 }

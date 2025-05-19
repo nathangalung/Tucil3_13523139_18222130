@@ -3,10 +3,14 @@ package algorithm;
 import core.GameState;
 import core.Move;
 import heuristic.Heuristic;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
- * Greedy Best First Search
+ * Greedy Best-First Search.
+ * Uses h(n) only.
  */
 public class GBFS extends PathFinder {
     
@@ -18,11 +22,10 @@ public class GBFS extends PathFinder {
     public GameState findPath(GameState initialState) {
         startTimer();
         
-        // Priority queue based on heuristic value
         PriorityQueue<GameState> openSet = new PriorityQueue<>(
-            (a, b) -> Integer.compare(heuristic.evaluate(a), heuristic.evaluate(b))
+            Comparator.comparingInt(heuristic::evaluate)
         );
-        Set<String> closedSet = new HashSet<>();
+        Set<String> closedSet = new HashSet<>(); // Visited board configurations
         
         openSet.add(initialState);
         
@@ -30,20 +33,15 @@ public class GBFS extends PathFinder {
             GameState current = openSet.poll();
             nodesVisited++;
             
-            // Check if goal state reached
             if (current.getBoard().isWin()) {
                 stopTimer();
-                return current;
+                return current; // Solution found
             }
             
-            String boardState = current.getBoard().toString();
-            if (closedSet.contains(boardState)) {
-                continue;
-            }
+            String boardKey = current.getBoard().toString();
+            if (closedSet.contains(boardKey)) continue;
+            closedSet.add(boardKey);
             
-            closedSet.add(boardState);
-            
-            // Generate and enqueue possible moves
             for (Move move : current.getPossibleMoves()) {
                 GameState nextState = current.applyMove(move);
                 if (!closedSet.contains(nextState.getBoard().toString())) {
@@ -51,13 +49,12 @@ public class GBFS extends PathFinder {
                 }
             }
         }
-        
         stopTimer();
-        return null;
+        return null; // No solution
     }
     
     @Override
     public String getName() {
-        return "Greedy Best First Search";
+        return "Greedy Best-First Search";
     }
 }

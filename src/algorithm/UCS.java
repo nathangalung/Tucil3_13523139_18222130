@@ -2,78 +2,67 @@ package algorithm;
 
 import core.GameState;
 import core.Move;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
- * Standalone Uniform Cost Search without interface dependency.
+ * Uniform Cost Search.
+ * Finds shortest path.
  */
-public class UCS {
+public class UCS { // Not extending PathFinder as it's standalone
     private int nodesVisited;
-    private long executionTime;
+    private long executionTimeMillis;
 
-    /**
-     * Resets metrics.
-     */
     public UCS() {
-        this.nodesVisited = 0;
-        this.executionTime = 0;
+        // Constructor for UCS
     }
 
-    /**
-     * Solve the puzzle starting from the given state, returning the goal state.
-     * @param initialState initial GameState
-     * @return goal GameState with solution path, or null if no solution
-     */
+    // Solve puzzle.
     public GameState solve(GameState initialState) {
         long startTime = System.currentTimeMillis();
         nodesVisited = 0;
 
-        // Frontier ordered by actual cost g(n)
         PriorityQueue<GameState> frontier = new PriorityQueue<>(Comparator.comparingInt(GameState::getCost));
-        Set<String> visited = new HashSet<>();
+        Set<String> visitedStates = new HashSet<>(); // Visited board configurations
         frontier.add(initialState);
 
         while (!frontier.isEmpty()) {
             GameState current = frontier.poll();
             nodesVisited++;
 
-            // Check goal condition
             if (current.getBoard().isWin()) {
-                executionTime = System.currentTimeMillis() - startTime;
-                return current;
+                executionTimeMillis = System.currentTimeMillis() - startTime;
+                return current; // Solution found
             }
 
-            String key = current.getBoard().toString();
-            if (visited.contains(key)) continue;
-            visited.add(key);
+            String currentBoardKey = current.getBoard().toString();
+            if (visitedStates.contains(currentBoardKey)) continue;
+            visitedStates.add(currentBoardKey);
 
-            // Expand all possible moves
             for (Move move : current.getPossibleMoves()) {
                 GameState next = current.applyMove(move);
-                String nextKey = next.getBoard().toString();
-                if (!visited.contains(nextKey)) {
+                if (!visitedStates.contains(next.getBoard().toString())) {
                     frontier.add(next);
                 }
             }
         }
-
-        executionTime = System.currentTimeMillis() - startTime;
-        return null; // no solution found
+        executionTimeMillis = System.currentTimeMillis() - startTime;
+        return null; // No solution
     }
 
-    /**
-     * @return number of nodes (states) visited during search
-     */
+    // Get nodes visited.
     public int getNodesVisited() {
         return nodesVisited;
     }
 
-    /**
-     * @return time in milliseconds spent on search
-     */
+    // Get execution time (ms).
     public long getExecutionTime() {
-        return executionTime;
+        return executionTimeMillis;
     }
+
+    // Get algorithm name.
     public String getName() {
         return "Uniform Cost Search";
     }

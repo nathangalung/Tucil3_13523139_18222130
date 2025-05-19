@@ -5,43 +5,56 @@ import core.GameState;
 import core.Piece;
 
 /**
- * Blocking Pieces heuristic
+ * Blocking Pieces heuristic.
+ * Counts pieces in path.
  */
 public class BP extends Heuristic {
     
     @Override
     public int evaluate(GameState state) {
         Board board = state.getBoard();
-        Piece primaryPiece = board.getPrimaryPiece();
-        char[][] grid = board.getGrid();
+        Piece primary = board.getPrimaryPiece();
+        char[][] grid = board.getGrid(); // Use current grid
         
-        if (primaryPiece == null) {
-            return Integer.MAX_VALUE;
-        }
+        if (primary == null) return Integer.MAX_VALUE;
         
         int blockingCount = 0;
+        int exitR = board.getExitRow();
+        int exitC = board.getExitCol();
         
-        // Count pieces blocking the path to exit
-        if (primaryPiece.isHorizontal()) {
-            int row = primaryPiece.getRow();
-            int startCol = primaryPiece.getCol() + primaryPiece.getSize();
-            
-            for (int col = startCol; col < board.getCols(); col++) {
-                if (grid[row][col] != '.' && grid[row][col] != 'K') {
-                    blockingCount++;
+        if (primary.isHorizontal()) {
+            int r = primary.getRow();
+            // Path to right exit
+            if (exitC >= primary.getCol() + primary.getSize() || exitC == board.getCols()) {
+                for (int c = primary.getCol() + primary.getSize(); c < board.getCols(); c++) {
+                    if (c == exitC && r == exitR) break; // Reached in-grid exit
+                    if (grid[r][c] != '.') blockingCount++;
+                }
+            } 
+            // Path to left exit
+            else if (exitC < primary.getCol() || exitC == -1) {
+                for (int c = primary.getCol() - 1; c >= 0; c--) {
+                    if (c == exitC && r == exitR) break; // Reached in-grid exit
+                    if (grid[r][c] != '.') blockingCount++;
                 }
             }
-        } else {
-            int col = primaryPiece.getCol();
-            int startRow = primaryPiece.getRow() + primaryPiece.getSize();
-            
-            for (int row = startRow; row < board.getRows(); row++) {
-                if (grid[row][col] != '.' && grid[row][col] != 'K') {
-                    blockingCount++;
+        } else { // Vertical
+            int c = primary.getCol();
+            // Path to bottom exit
+            if (exitR >= primary.getRow() + primary.getSize() || exitR == board.getRows()) {
+                for (int r = primary.getRow() + primary.getSize(); r < board.getRows(); r++) {
+                    if (r == exitR && c == exitC) break;
+                    if (grid[r][c] != '.') blockingCount++;
+                }
+            }
+            // Path to top exit
+            else if (exitR < primary.getRow() || exitR == -1) {
+                for (int r = primary.getRow() - 1; r >= 0; r--) {
+                    if (r == exitR && c == exitC) break;
+                    if (grid[r][c] != '.') blockingCount++;
                 }
             }
         }
-        
         return blockingCount;
     }
     
