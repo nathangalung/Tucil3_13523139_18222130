@@ -22,46 +22,43 @@ public class FileParser {
         List<String> lines = readAllLines();
         
         int lineIdx = 0;
-        // Read dimensions
         String dimLine = getNextNonCommentLine(lines, lineIdx);
         lineIdx = lines.indexOf(dimLine) + 1;
         String[] dimensions = dimLine.split(" ");
         int fileRows = Integer.parseInt(dimensions[0]);
         int fileCols = Integer.parseInt(dimensions[1]);
         
-        // Skip piece count line
         String pieceCountLine = getNextNonCommentLine(lines, lineIdx);
         lineIdx = lines.indexOf(pieceCountLine) + 1;
 
         Board board = new Board(fileRows, fileCols);
         char[][] configuration = new char[fileRows][fileCols];
         for (char[] rowConfig : configuration) {
-            Arrays.fill(rowConfig, ' '); // Init with spaces
+            Arrays.fill(rowConfig, ' ');
         }
 
         List<String> potentialGridLines = new ArrayList<>();
         for (int i = lineIdx; i < lines.size(); i++) {
             String currentLine = lines.get(i).trim();
             if (!currentLine.startsWith("//") && !currentLine.isEmpty()) {
-                potentialGridLines.add(lines.get(i)); // Add original line with leading/trailing spaces
+                potentialGridLines.add(lines.get(i)); 
             }
         }
         
         boolean exitSetExplicitly = false;
         List<String> actualGridLines = new ArrayList<>();
 
-        // Pass 1: Identify K-only lines and actual grid lines
         for (String currentLine : potentialGridLines) {
             String trimmedLine = currentLine.trim();
             if (trimmedLine.equals("K") && !exitSetExplicitly) {
                 int kCol = currentLine.indexOf('K');
-                if (actualGridLines.isEmpty()) { // K before grid
+                if (actualGridLines.isEmpty()) { 
                     board.setExit(-1, kCol);
                     exitSetExplicitly = true;
-                } else if (actualGridLines.size() >= fileRows) { // K after grid
+                } else if (actualGridLines.size() >= fileRows) { 
                     board.setExit(fileRows, kCol);
                     exitSetExplicitly = true;
-                } else { // K-only line amidst grid lines
+                } else {
                     if (actualGridLines.size() < fileRows) actualGridLines.add(currentLine);
                 }
             } else if (actualGridLines.size() < fileRows) {
@@ -69,25 +66,22 @@ public class FileParser {
             }
         }
         
-        // Pass 2: Populate configuration from identified grid lines
         for (int r = 0; r < fileRows; r++) {
-            if (r >= actualGridLines.size()) continue; // Not enough lines
+            if (r >= actualGridLines.size()) continue; 
 
             String lineContent = actualGridLines.get(r);
             String effectiveContent = lineContent;
 
-            // Check leading K
             if (!exitSetExplicitly && lineContent.length() > 0 && lineContent.charAt(0) == 'K') {
-                board.setExit(r, -1); // Left exit
+                board.setExit(r, -1);
                 exitSetExplicitly = true;
                 effectiveContent = lineContent.substring(1);
             }
-            
-            // Populate grid cells
+
             for (int c = 0; c < fileCols; c++) {
                 if (c < effectiveContent.length()) {
                     char charVal = effectiveContent.charAt(c);
-                    if (charVal == 'K' && !exitSetExplicitly) { // K within grid
+                    if (charVal == 'K' && !exitSetExplicitly) {
                         board.setExit(r, c);
                         exitSetExplicitly = true;
                         configuration[r][c] = ' ';
@@ -97,9 +91,8 @@ public class FileParser {
                 }
             }
 
-            // Check trailing K
             if (!exitSetExplicitly && lineContent.length() == fileCols + 1 && lineContent.charAt(fileCols) == 'K') {
-                board.setExit(r, fileCols); // Right exit
+                board.setExit(r, fileCols); 
                 exitSetExplicitly = true;
             }
         }

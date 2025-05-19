@@ -11,21 +11,18 @@ import java.util.Set;
  * Uniform Cost Search.
  * Finds shortest path.
  */
-public class UCS { // Not extending PathFinder as it's standalone
+public class UCS { 
     private int nodesVisited;
     private long executionTimeMillis;
 
-    public UCS() {
-        // Constructor for UCS
-    }
+    public UCS() {}
 
-    // Solve puzzle.
     public GameState solve(GameState initialState) {
         long startTime = System.currentTimeMillis();
         nodesVisited = 0;
 
         PriorityQueue<GameState> frontier = new PriorityQueue<>(Comparator.comparingInt(GameState::getCost));
-        Set<String> visitedStates = new HashSet<>(); // Visited board configurations
+        Set<String> visitedStates = new HashSet<>(); 
         frontier.add(initialState);
 
         while (!frontier.isEmpty()) {
@@ -34,7 +31,7 @@ public class UCS { // Not extending PathFinder as it's standalone
 
             if (current.getBoard().isWin()) {
                 executionTimeMillis = System.currentTimeMillis() - startTime;
-                return current; // Solution found
+                return current;
             }
 
             String currentBoardKey = current.getBoard().toString();
@@ -49,7 +46,7 @@ public class UCS { // Not extending PathFinder as it's standalone
             }
         }
         executionTimeMillis = System.currentTimeMillis() - startTime;
-        return null; // No solution
+        return null; 
     }
 
     // Get nodes visited.

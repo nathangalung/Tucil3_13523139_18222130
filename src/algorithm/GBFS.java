@@ -25,7 +25,7 @@ public class GBFS extends PathFinder {
         PriorityQueue<GameState> openSet = new PriorityQueue<>(
             Comparator.comparingInt(heuristic::evaluate)
         );
-        Set<String> closedSet = new HashSet<>(); // Visited board configurations
+        Set<String> closedSet = new HashSet<>(); 
         
         openSet.add(initialState);
         
@@ -35,7 +35,7 @@ public class GBFS extends PathFinder {
             
             if (current.getBoard().isWin()) {
                 stopTimer();
-                return current; // Solution found
+                return current;
             }
             
             String boardKey = current.getBoard().toString();
@@ -50,7 +50,7 @@ public class GBFS extends PathFinder {
             }
         }
         stopTimer();
-        return null; // No solution
+        return null; 
     }
     
     @Override

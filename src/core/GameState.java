@@ -11,7 +11,7 @@ public class GameState {
     private final Board board;
     private final GameState parent;
     private final Move lastMove;
-    private final int cost; // g(n)
+    private final int cost;
     
     public GameState(Board board) {
         this(board, null, null, 0);
@@ -33,10 +33,9 @@ public class GameState {
     public Move getLastMove() { return lastMove; }
     public int getCost() { return cost; }
     
-    // Get all valid moves.
     public List<Move> getPossibleMoves() {
         List<Move> moves = new ArrayList<>();
-        char[][] grid = board.getGrid(); // Use a copy
+        char[][] grid = board.getGrid();
         int rows = board.getRows();
         int cols = board.getCols();
         
@@ -46,22 +45,18 @@ public class GameState {
             int size = piece.getSize();
             
             if (piece.isHorizontal()) {
-                // Check left
                 int maxSteps = 0;
                 for (int i = c - 1; i >= 0 && grid[r][i] == '.'; i--) maxSteps++;
                 if (maxSteps > 0) moves.add(new Move(piece, Move.LEFT, maxSteps));
                 
-                // Check right
                 maxSteps = 0;
                 for (int i = c + size; i < cols && grid[r][i] == '.'; i++) maxSteps++;
                 if (maxSteps > 0) moves.add(new Move(piece, Move.RIGHT, maxSteps));
-            } else { // Vertical
-                // Check up
+            } else { 
                 int maxSteps = 0;
                 for (int i = r - 1; i >= 0 && grid[i][c] == '.'; i--) maxSteps++;
                 if (maxSteps > 0) moves.add(new Move(piece, Move.UP, maxSteps));
                 
-                // Check down
                 maxSteps = 0;
                 for (int i = r + size; i < rows && grid[i][c] == '.'; i++) maxSteps++;
                 if (maxSteps > 0) moves.add(new Move(piece, Move.DOWN, maxSteps));
@@ -74,7 +69,7 @@ public class GameState {
     public GameState applyMove(Move move) {
         Board newBoard = board.copy();
         Piece movingPiece = null;
-        for (Piece p : newBoard.getPieces()) { // Find piece in new board
+        for (Piece p : newBoard.getPieces()) { 
             if (p.getId() == move.getPiece().getId()) {
                 movingPiece = p;
                 break;
@@ -98,7 +93,7 @@ public class GameState {
         List<GameState> path = new ArrayList<>();
         GameState current = this;
         while (current != null) {
-            path.add(0, current); // Add to front
+            path.add(0, current);
             current = current.getParent();
         }
         return path;
@@ -109,11 +104,11 @@ public class GameState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GameState gameState = (GameState) o;
-        return Objects.equals(board.toString(), gameState.board.toString()); // Board string for equality
+        return Objects.equals(board.toString(), gameState.board.toString()); 
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(board.toString()); // Board string for hash
+        return Objects.hash(board.toString());
     }
 }

@@ -93,7 +93,6 @@ public class GUI extends JFrame {
     // Setup main board display.
     private void setupSolutionDisplayArea() {
         solutionDisplayArea = new JPanel(new BorderLayout());
-        // Initial empty board panel or placeholder
         boardPanel = new BoardPanel(null); 
         solutionDisplayArea.add(boardPanel, BorderLayout.CENTER);
         add(solutionDisplayArea, BorderLayout.CENTER);
@@ -128,7 +127,7 @@ public class GUI extends JFrame {
                 displayBoard(currentBoard);
                 logArea.setText("Puzzle loaded: " + file.getName() + "\n");
                 solveButton.setEnabled(true);
-                // Clear previous solution animation controls
+
                 if (solutionDisplayArea.getComponentCount() > 1) {
                     solutionDisplayArea.remove(solutionDisplayArea.getComponent(1));
                     solutionDisplayArea.revalidate();
@@ -236,7 +235,6 @@ public class GUI extends JFrame {
         Animation animation = new Animation(boardPanel, solutionPath, logArea);
         JPanel animControls = animation.createControlPanel();
 
-        // Remove old animation controls if any
         if (solutionDisplayArea.getComponentCount() > 1) {
              Component lastComp = solutionDisplayArea.getComponent(solutionDisplayArea.getComponentCount() -1);
              if (!(lastComp instanceof BoardPanel)) {

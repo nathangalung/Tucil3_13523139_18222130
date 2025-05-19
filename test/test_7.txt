@@ -1,0 +1,12 @@
+10 10
+15
+AAB....F..
+..B.CCCF.M
+D.B..T..OM
+D..EET..OM
+D.PP.T..O.K
+D..LLL...H
+......GGGH
+J...NNN..H
+JIII......
+J.........

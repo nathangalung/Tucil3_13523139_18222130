@@ -3,14 +3,13 @@ package algorithm;
 import core.GameState;
 import core.Move;
 import heuristic.Heuristic;
-// No standard Java Set/List needed for core recursion
 
 /**
  * Iterative Deepening A*.
  * Depth-first with threshold.
  */
 public class IDAS extends PathFinder {
-    private GameState solutionState; // Stores found solution
+    private GameState solutionState;
     
     public IDAS(Heuristic heuristic) {
         super(heuristic);
@@ -19,7 +18,7 @@ public class IDAS extends PathFinder {
     @Override
     public GameState findPath(GameState initialState) {
         startTimer();
-        solutionState = null; // Reset
+        solutionState = null;
         
         int threshold = heuristic.evaluate(initialState);
         
@@ -29,22 +28,21 @@ public class IDAS extends PathFinder {
 
             if (result.status == SearchStatus.FOUND) {
                 stopTimer();
-                return solutionState; // Solution found
+                return solutionState;
             }
             if (result.status == SearchStatus.NOT_FOUND_EXHAUSTED) {
                 stopTimer();
-                return null; // No solution possible
+                return null;
             }
-            threshold = result.nextThreshold; // Update for next iteration
+            threshold = result.nextThreshold; 
         }
-        stopTimer(); // Should be unreachable if logic is correct
+        stopTimer(); 
         return solutionState; 
     }
     
-    // Recursive search helper.
     private SearchResult searchRecursive(GameState state, int gCost, int currentThreshold) {
         int fCost = gCost + heuristic.evaluate(state);
-        int nodesThisIteration = 1; // Count current node
+        int nodesThisIteration = 1; 
 
         if (fCost > currentThreshold) {
             return new SearchResult(SearchStatus.NOT_FOUND_WITHIN_THRESHOLD, fCost, nodesThisIteration);
@@ -59,7 +57,6 @@ public class IDAS extends PathFinder {
         
         for (Move move : state.getPossibleMoves()) {
             GameState nextState = state.applyMove(move);
-            // Avoid simple loops by not going back to parent immediately
             if (state.getParent() != null && nextState.getBoard().toString().equals(state.getParent().getBoard().toString())) {
                 continue;
             }
@@ -81,7 +78,7 @@ public class IDAS extends PathFinder {
 
     private static class SearchResult {
         final SearchStatus status;
-        final int nextThreshold; // Min f-cost exceeding current threshold
+        final int nextThreshold;
         final int nodesThisIteration;
 
         SearchResult(SearchStatus status, int nextThreshold, int nodesThisIteration) {

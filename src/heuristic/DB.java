@@ -17,7 +17,6 @@ public class DB extends Heuristic {
     
     @Override
     public int evaluate(GameState state) {
-        // Weighted sum
         return mdHeuristic.evaluate(state) + bpHeuristic.evaluate(state);
     }
     

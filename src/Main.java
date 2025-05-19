@@ -19,9 +19,9 @@ public class Main {
         }
 
         if (useCLI) {
-            CLI.run(); // CLI runs directly
+            CLI.run(); 
         } else {
-            SwingUtilities.invokeLater(GUI::new); // GUI on EDT
+            SwingUtilities.invokeLater(GUI::new); 
         }
     }
 }

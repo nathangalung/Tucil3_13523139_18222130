@@ -1,0 +1,8 @@
+6 6
+9
+.AABCC
+.DDBE.
+.FPPE.K
+.F....
+..GHHH
+IIG...

@@ -12,25 +12,25 @@ import java.util.Map;
 public class Board {
     private final int rows;
     private final int cols;
-    private final char[][] grid; // Logical game grid
+    private final char[][] grid; 
     private final List<Piece> pieces;
     private int exitRow;
     private int exitCol;
-    private final boolean[] isSpaceOnlyRow; // For rendering
-    private final boolean[] isSpaceOnlyCol; // For rendering
+    private final boolean[] isSpaceOnlyRow; 
+    private final boolean[] isSpaceOnlyCol; 
     
     public Board(int rows, int cols) {
         this.rows = rows;
         this.cols = cols;
         this.grid = new char[rows][cols];
         this.pieces = new ArrayList<>();
-        this.exitRow = -1; // Default: no exit
-        this.exitCol = -1; // Default: no exit
+        this.exitRow = -1; 
+        this.exitCol = -1; 
         this.isSpaceOnlyRow = new boolean[rows];
         this.isSpaceOnlyCol = new boolean[cols];
         
         for (char[] rowGrid : this.grid) {
-            Arrays.fill(rowGrid, '.'); // Init empty
+            Arrays.fill(rowGrid, '.'); 
         }
     }
 
@@ -44,22 +44,20 @@ public class Board {
     public void initialize(char[][] originalConfiguration) {
         Map<Character, List<int[]>> piecePositions = new HashMap<>();
         
-        // Populate logical grid
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 char c = originalConfiguration[i][j];
                 if (c == ' ' || c == '\0') {
                     this.grid[i][j] = '.';
-                } else if (c != '.') { // Piece
+                } else if (c != '.') {
                     this.grid[i][j] = c; 
                     piecePositions.computeIfAbsent(c, k -> new ArrayList<>()).add(new int[]{i, j});
-                } else { // Explicit '.'
+                } else { 
                     this.grid[i][j] = '.';
                 }
             }
         }
         
-        // Create piece objects
         for (Map.Entry<Character, List<int[]>> entry : piecePositions.entrySet()) {
             char id = entry.getKey();
             List<int[]> positions = entry.getValue();
@@ -75,7 +73,6 @@ public class Board {
             pieces.add(new Piece(id, (id == 'P'), isHorizontal, size, startRow, startCol));
         }
 
-        // Determine space-only rows/cols
         for (int i = 0; i < rows; i++) {
             isSpaceOnlyRow[i] = true; 
             for (int j = 0; j < cols; j++) {
@@ -95,7 +92,6 @@ public class Board {
             }
         }
         
-        // Default exit if not set
         if (this.exitRow == -1 && this.exitCol == -1) {
             Piece primary = getPrimaryPiece();
             if (primary != null) {
@@ -108,12 +104,11 @@ public class Board {
                 }
             }
         }
-        updateGrid(); // Finalize grid
+        updateGrid(); 
     }
 
-    // Is row for rendering only?
     public boolean isRowSpaceOnly(int r) { return (r >= 0 && r < rows) && isSpaceOnlyRow[r]; }
-    // Is col for rendering only?
+
     public boolean isColSpaceOnly(int c) { return (c >= 0 && c < cols) && isSpaceOnlyCol[c]; }
     
     // Get the primary piece.
@@ -126,7 +121,7 @@ public class Board {
     
     // Get all pieces.
     public List<Piece> getPieces() {
-        return new ArrayList<>(pieces); // Defensive copy
+        return new ArrayList<>(pieces);
     }
     
     public int getRows() { return rows; }
@@ -190,16 +185,16 @@ public class Board {
         int pSize = primary.getSize();
         
         if (primary.isHorizontal()) {
-            if (exitRow >= 0 && exitRow < rows && pRow != exitRow) return false; // Must align
-            if (exitCol == cols) return pRow == exitRow && (pCol + pSize >= cols); // Right edge
-            if (exitCol == -1) return pRow == exitRow && (pCol <= exitCol);       // Left edge
-            if (exitCol >= 0 && exitCol < cols) // Within grid
+            if (exitRow >= 0 && exitRow < rows && pRow != exitRow) return false; 
+            if (exitCol == cols) return pRow == exitRow && (pCol + pSize >= cols); 
+            if (exitCol == -1) return pRow == exitRow && (pCol <= exitCol);    
+            if (exitCol >= 0 && exitCol < cols) 
                 return pRow == exitRow && (pCol <= exitCol && (pCol + pSize - 1) >= exitCol);
-        } else { // Vertical
-            if (exitCol >= 0 && exitCol < cols && pCol != exitCol) return false; // Must align
-            if (exitRow == rows) return pCol == exitCol && (pRow + pSize >= rows); // Bottom edge
-            if (exitRow == -1) return pCol == exitCol && (pRow <= exitRow);       // Top edge
-            if (exitRow >= 0 && exitRow < rows) // Within grid
+        } else { 
+            if (exitCol >= 0 && exitCol < cols && pCol != exitCol) return false;
+            if (exitRow == rows) return pCol == exitCol && (pRow + pSize >= rows);
+            if (exitRow == -1) return pCol == exitCol && (pRow <= exitRow);      
+            if (exitRow >= 0 && exitRow < rows) 
                 return pCol == exitCol && (pRow <= exitRow && (pRow + pSize - 1) >= exitRow);
         }
         return false;

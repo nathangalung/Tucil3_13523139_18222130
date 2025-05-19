@@ -61,20 +61,20 @@ public class CLI {
             }
 
             System.out.println("\nInitial Board:");
-            printBoard(board, '\0'); // No piece moved yet
+            printBoard(board, '\0'); 
 
             GameState solutionState;
             int nodes = 0;
             long timeMs = 0;
             String algoName = "";
 
-            if (algoChoice == 1) { // UCS
+            if (algoChoice == 1) {
                 UCS solver = new UCS();
                 solutionState = solver.solve(initialState);
                 nodes = solver.getNodesVisited();
                 timeMs = solver.getExecutionTime();
                 algoName = solver.getName();
-            } else if (algoChoice >= 2 && algoChoice <= 4) { // Heuristic-based
+            } else if (algoChoice >= 2 && algoChoice <= 4) { 
                 PathFinder solver = switch (algoChoice) {
                     case 2 -> new GBFS(heuristic);
                     case 3 -> new AS(heuristic);
@@ -90,11 +90,10 @@ public class CLI {
                 return;
             }
 
-            // Output results
             if (solutionState != null) {
                 List<GameState> path = solutionState.getSolutionPath();
                 System.out.println("\nSolution: " + (path.size() - 1) + " moves.");
-                for (int i = 1; i < path.size(); i++) { // Skip initial state
+                for (int i = 1; i < path.size(); i++) { 
                     GameState state = path.get(i);
                     Move move = state.getLastMove();
                     System.out.println("\nMove " + i + ": " + move);
@@ -126,7 +125,6 @@ public class CLI {
         File fileInTestDir = new File("test", fileName);
         if (fileInTestDir.exists()) return fileInTestDir.getAbsolutePath();
         
-        // Fallback to current dir + test (if not found in simple "test")
         File fileInCurrentTestDir = new File(System.getProperty("user.dir"), "test" + File.separator + fileName);
          if (fileInCurrentTestDir.exists()) return fileInCurrentTestDir.getAbsolutePath();
 
@@ -147,15 +145,14 @@ public class CLI {
                 else if (movedPieceId != '\0' && c == movedPieceId) System.out.print(ANSI_YELLOW + c + ANSI_RESET);
                 else System.out.print(c);
             }
-            // Print exit 'K' if it's on this row, to the right
+
             if (board.getExitRow() == i && board.getExitCol() == cols) {
                 System.out.print(" " + ANSI_GREEN + 'K' + ANSI_RESET);
             }
             System.out.println();
         }
-        // Print exit 'K' if it's on a separate line below
         if (board.getExitRow() == rows) {
-            for(int j=0; j<board.getExitCol(); ++j) System.out.print(" "); // Align K
+            for(int j=0; j<board.getExitCol(); ++j) System.out.print(" "); 
             System.out.println(ANSI_GREEN + 'K' + ANSI_RESET);
         }
     }
