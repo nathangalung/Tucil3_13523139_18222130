@@ -35,7 +35,7 @@ public class GameState {
     
     public List<Move> getPossibleMoves() {
         List<Move> moves = new ArrayList<>();
-        char[][] grid = board.getGrid();
+        char[][] grid = board.getGrid(); // Use a copy
         int rows = board.getRows();
         int cols = board.getCols();
         
@@ -45,21 +45,46 @@ public class GameState {
             int size = piece.getSize();
             
             if (piece.isHorizontal()) {
-                int maxSteps = 0;
-                for (int i = c - 1; i >= 0 && grid[r][i] == '.'; i--) maxSteps++;
-                if (maxSteps > 0) moves.add(new Move(piece, Move.LEFT, maxSteps));
+                // Check LEFT (within grid)
+                int maxStepsLeftInGrid = 0;
+                for (int i = c - 1; i >= 0 && grid[r][i] == '.'; i--) maxStepsLeftInGrid++;
+                if (maxStepsLeftInGrid > 0) moves.add(new Move(piece, Move.LEFT, maxStepsLeftInGrid));
                 
-                maxSteps = 0;
-                for (int i = c + size; i < cols && grid[r][i] == '.'; i++) maxSteps++;
-                if (maxSteps > 0) moves.add(new Move(piece, Move.RIGHT, maxSteps));
-            } else { 
-                int maxSteps = 0;
-                for (int i = r - 1; i >= 0 && grid[i][c] == '.'; i--) maxSteps++;
-                if (maxSteps > 0) moves.add(new Move(piece, Move.UP, maxSteps));
+                // Check LEFT (to exit at col = -1)
+                if (c == 0 && board.getExitCol() == -1 && board.getExitRow() == r) {
+                    moves.add(new Move(piece, Move.LEFT, 1));
+                }
+
+                // Check RIGHT (within grid)
+                int maxStepsRightInGrid = 0;
+                for (int i = c + size; i < cols && grid[r][i] == '.'; i++) maxStepsRightInGrid++;
+                if (maxStepsRightInGrid > 0) moves.add(new Move(piece, Move.RIGHT, maxStepsRightInGrid));
+
+                // Check RIGHT (to exit at col = cols)
+                if ((c + size -1) == (cols - 1) && board.getExitCol() == cols && board.getExitRow() == r) {
+                    moves.add(new Move(piece, Move.RIGHT, 1));
+                }
+
+            } else { // Vertical
+                // Check UP (within grid)
+                int maxStepsUpInGrid = 0;
+                for (int i = r - 1; i >= 0 && grid[i][c] == '.'; i--) maxStepsUpInGrid++;
+                if (maxStepsUpInGrid > 0) moves.add(new Move(piece, Move.UP, maxStepsUpInGrid));
+
+                // Check UP (to exit at row = -1)
+                if (r == 0 && board.getExitRow() == -1 && board.getExitCol() == c) {
+                    moves.add(new Move(piece, Move.UP, 1));
+                }
                 
-                maxSteps = 0;
-                for (int i = r + size; i < rows && grid[i][c] == '.'; i++) maxSteps++;
-                if (maxSteps > 0) moves.add(new Move(piece, Move.DOWN, maxSteps));
+                // Check DOWN (within grid)
+                int maxStepsDownInGrid = 0;
+                for (int i = r + size; i < rows && grid[i][c] == '.'; i++) maxStepsDownInGrid++;
+                if (maxStepsDownInGrid > 0) moves.add(new Move(piece, Move.DOWN, maxStepsDownInGrid));
+
+                // Check DOWN (to exit at row = rows)
+                if ((r + size - 1) == (rows - 1) && board.getExitRow() == rows && board.getExitCol() == c) {
+                    moves.add(new Move(piece, Move.DOWN, 1));
+                }
             }
         }
         return moves;

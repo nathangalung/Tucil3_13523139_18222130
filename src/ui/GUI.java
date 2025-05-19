@@ -128,11 +128,16 @@ public class GUI extends JFrame {
                 logArea.setText("Puzzle loaded: " + file.getName() + "\n");
                 solveButton.setEnabled(true);
 
+                // Clear previous solution animation controls
                 if (solutionDisplayArea.getComponentCount() > 1) {
-                    solutionDisplayArea.remove(solutionDisplayArea.getComponent(1));
-                    solutionDisplayArea.revalidate();
-                    solutionDisplayArea.repaint();
+                    Component lastComp = solutionDisplayArea.getComponent(solutionDisplayArea.getComponentCount() -1);
+                    if (!(lastComp instanceof BoardPanel)) { 
+                       solutionDisplayArea.remove(lastComp);
+                    }
                 }
+                // After removing old controls, revalidate and repaint the container
+                solutionDisplayArea.revalidate();
+                solutionDisplayArea.repaint();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "File Load Error", JOptionPane.ERROR_MESSAGE);
                 logArea.setText("Error loading " + file.getName() + ": " + ex.getMessage() + "\n");
@@ -150,8 +155,6 @@ public class GUI extends JFrame {
         } else {
             boardPanel.updateBoard(boardToDisplay);
         }
-        solutionDisplayArea.revalidate();
-        solutionDisplayArea.repaint();
         pack();
     }
 
