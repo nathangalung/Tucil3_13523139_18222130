@@ -133,7 +133,7 @@ public class CLI {
 
     // Print board with colors.
     private static void printBoard(Board board, char movedPieceId) {
-        char[][] grid = board.getGrid(); // Gets a copy
+        char[][] grid = board.getGrid();
         int rows = board.getRows(), cols = board.getCols();
         Piece primary = board.getPrimaryPiece();
 
