@@ -64,9 +64,9 @@ public class CLI {
             printBoard(board, '\0'); 
 
             GameState solutionState;
-            int nodes = 0;
-            long timeMs = 0;
-            String algoName = "";
+            int nodes;
+            long timeMs;
+            String algoName;
 
             if (algoChoice == 1) {
                 UCS solver = new UCS();
@@ -125,7 +125,7 @@ public class CLI {
         File fileInTestDir = new File("test", fileName);
         if (fileInTestDir.exists()) return fileInTestDir.getAbsolutePath();
         
-        File fileInCurrentTestDir = new File(System.getProperty("user.dir"), "test" + File.separator + fileName);
+        File fileInCurrentTestDir = new File(System.getProperty("user.dir"), "test/input" + File.separator + fileName);
          if (fileInCurrentTestDir.exists()) return fileInCurrentTestDir.getAbsolutePath();
 
         return fileName;
@@ -138,7 +138,17 @@ public class CLI {
         Piece primary = board.getPrimaryPiece();
 
         for (int i = 0; i < rows; i++) {
+            // Skip printing if this is a space-only row
+            if (board.isRowSpaceOnly(i)) {
+                continue;
+            }
+            
             for (int j = 0; j < cols; j++) {
+                // Skip printing if this is a space-only column
+                if (board.isColSpaceOnly(j)) {
+                    continue;
+                }
+                
                 char c = grid[i][j];
                 if (c == '.') System.out.print('.');
                 else if (primary != null && c == primary.getId()) System.out.print(ANSI_RED + c + ANSI_RESET);

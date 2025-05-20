@@ -51,7 +51,7 @@ public class Board {
                     this.grid[i][j] = '.';
                 } else if (c != '.') {
                     this.grid[i][j] = c; 
-                    piecePositions.computeIfAbsent(c, k -> new ArrayList<>()).add(new int[]{i, j});
+                    piecePositions.computeIfAbsent(c, _ -> new ArrayList<>()).add(new int[]{i, j});
                 } else { 
                     this.grid[i][j] = '.';
                 }
@@ -184,19 +184,43 @@ public class Board {
         int pCol = primary.getCol();
         int pSize = primary.getSize();
         
-        if (primary.isHorizontal()) {
-            if (exitRow >= 0 && exitRow < rows && pRow != exitRow) return false; 
-            if (exitCol == cols) return pRow == exitRow && (pCol + pSize >= cols); 
-            if (exitCol == -1) return pRow == exitRow && (pCol <= exitCol);    
-            if (exitCol >= 0 && exitCol < cols) 
-                return pRow == exitRow && (pCol <= exitCol && (pCol + pSize - 1) >= exitCol);
-        } else { 
-            if (exitCol >= 0 && exitCol < cols && pCol != exitCol) return false;
-            if (exitRow == rows) return pCol == exitCol && (pRow + pSize >= rows);
-            if (exitRow == -1) return pCol == exitCol && (pRow <= exitRow);      
-            if (exitRow >= 0 && exitRow < rows) 
-                return pCol == exitCol && (pRow <= exitRow && (pRow + pSize - 1) >= exitRow);
+        // For horizontal pieces with exit on the right
+        if (primary.isHorizontal() && exitCol == cols) {
+            if (pRow != exitRow) return false;
+        
+            return pCol + pSize - 1 == cols - 1;
         }
+        
+        // For horizontal pieces with exit on the left
+        if (primary.isHorizontal() && exitCol == -1) {
+            if (pRow != exitRow) return false;
+            
+            return pCol == 0;
+        }
+        
+        // For vertical pieces with exit at the bottom
+        if (!primary.isHorizontal() && exitRow == rows) {
+            if (pCol != exitCol) return false;
+            
+            return pRow + pSize - 1 == rows - 1;
+        }
+        
+        // For vertical pieces with exit at the top
+        if (!primary.isHorizontal() && exitRow == -1) {
+            if (pCol != exitCol) return false;
+            
+            return pRow == 0;
+        }
+        
+        // For exits within the grid (less common case)
+        if (exitRow >= 0 && exitRow < rows && exitCol >= 0 && exitCol < cols) {
+            if (primary.isHorizontal()) {
+                return pRow == exitRow && pCol <= exitCol && pCol + pSize - 1 >= exitCol;
+            } else {
+                return pCol == exitCol && pRow <= exitRow && pRow + pSize - 1 >= exitRow;
+            }
+        }
+        
         return false;
     }
     

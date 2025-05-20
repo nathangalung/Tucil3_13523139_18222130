@@ -46,7 +46,7 @@ public class Animation {
     // Create animation controls.
     public JPanel createControlPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        int totalSteps = solutionPath.size() > 0 ? solutionPath.size() - 1 : 0;
+        int totalSteps = !solutionPath.isEmpty() ? solutionPath.size() - 1 : 0;
         stepLabel = new JLabel("Step: 0/" + totalSteps);
         playButton = new JButton("Play");
         pauseButton = new JButton("Pause");
@@ -57,10 +57,10 @@ public class Animation {
         playButton.setEnabled(totalSteps > 0);
         resetButton.setEnabled(false);
 
-        playButton.addActionListener(e -> setupAndPlayAnimation());
-        pauseButton.addActionListener(e -> pauseAnimation());
-        resetButton.addActionListener(e -> resetAnimation());
-        speedSlider.addChangeListener(e -> {
+        playButton.addActionListener(_ -> setupAndPlayAnimation());
+        pauseButton.addActionListener(_ -> pauseAnimation());
+        resetButton.addActionListener(_ -> resetAnimation());
+        speedSlider.addChangeListener(_ -> {
             animationDelayMillis = 2100 - speedSlider.getValue(); 
             if (animationTimer != null && animationTimer.isRunning()) {
                 animationTimer.setDelay(animationDelayMillis);
@@ -86,7 +86,7 @@ public class Animation {
 
         if (animationTimer != null && animationTimer.isRunning()) animationTimer.stop();
         
-        animationTimer = new Timer(animationDelayMillis, evt -> {
+        animationTimer = new Timer(animationDelayMillis, _ -> {
             int step = currentStep.get();
             if (step < solutionPath.size() -1) {
                 step = currentStep.incrementAndGet();

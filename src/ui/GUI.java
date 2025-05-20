@@ -12,15 +12,14 @@ import heuristic.BP;
 import heuristic.DB;
 import heuristic.Heuristic;
 import heuristic.MD;
+import java.awt.AWTException;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.io.IOException;
 import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -72,7 +71,7 @@ public class GUI extends JFrame {
 
         JButton fileButton = new JButton("Select Puzzle File");
         currentFileLabel = new JLabel("No file selected");
-        fileButton.addActionListener(e -> loadPuzzleFile());
+        fileButton.addActionListener(_ -> loadPuzzleFile());
 
         algoSelector = new JComboBox<>(new String[]{
             "Uniform Cost Search", "Greedy Best-First", "A* Search", "Iterative Deepening A*"
@@ -80,11 +79,11 @@ public class GUI extends JFrame {
         heuristicSelector = new JComboBox<>(new String[]{
             "Manhattan Distance", "Blocking Pieces", "Distance + Blocking"
         });
-        algoSelector.addActionListener(e -> heuristicSelector.setEnabled(algoSelector.getSelectedIndex() != 0));
+        algoSelector.addActionListener(_ -> heuristicSelector.setEnabled(algoSelector.getSelectedIndex() != 0));
         heuristicSelector.setEnabled(algoSelector.getSelectedIndex() != 0);
 
         solveButton = new JButton("Solve");
-        solveButton.addActionListener(e -> solvePuzzle());
+        solveButton.addActionListener(_ -> solvePuzzle());
         solveButton.setEnabled(false);
 
         panel.add(fileButton);
@@ -122,7 +121,7 @@ public class GUI extends JFrame {
 
     // Load puzzle from file.
     private void loadPuzzleFile() {
-        File testDir = new File(System.getProperty("user.dir"), "test");
+        File testDir = new File(System.getProperty("user.dir"), "test/input");
         JFileChooser chooser = new JFileChooser(testDir.exists() ? testDir : null);
         chooser.setFileFilter(new FileNameExtensionFilter("Text Files (*.txt)", "txt"));
         
@@ -130,7 +129,7 @@ public class GUI extends JFrame {
             File file = chooser.getSelectedFile();
             String fileName = file.getName();
             currentFileLabel.setText(fileName);
-            currentPuzzleName = fileName.replace(".txt", ""); // Store for screenshots
+            currentPuzzleName = fileName.replace(".txt", "");
             
             try {
                 currentBoard = new FileParser(file.getAbsolutePath()).parseFile();
@@ -155,11 +154,11 @@ public class GUI extends JFrame {
                         // Small delay to ensure UI is fully drawn
                         Thread.sleep(200);
                         takeScreenshot("initial");
-                    } catch (Exception ex) {
+                    } catch (InterruptedException ex) {
                         logArea.append("Failed to capture initial state screenshot: " + ex.getMessage() + "\n");
                     }
                 });
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "File Load Error", JOptionPane.ERROR_MESSAGE);
                 logArea.setText("Error loading " + fileName + ": " + ex.getMessage() + "\n");
                 currentBoard = null;
@@ -197,9 +196,9 @@ public class GUI extends JFrame {
 
         new Thread(() -> {
             GameState initial = new GameState(currentBoard.copy());
-            GameState solutionState = null;
-            int nodes = 0;
-            long timeMs = 0;
+            GameState solutionState;
+            int nodes;
+            long timeMs;
             String algoName = algoSelector.getSelectedItem().toString();
             String heurName = heuristicSelector.getSelectedItem().toString();
 
@@ -220,7 +219,7 @@ public class GUI extends JFrame {
                     nodes = solver.getNodesVisited();
                     timeMs = solver.getExecutionTime();
                 }
-            } catch (Exception ex) {
+            } catch (IllegalStateException ex) {
                  final String errorMsg = "Solver error: " + ex.getMessage();
                  SwingUtilities.invokeLater(() -> {
                     logArea.append(errorMsg + "\n");
@@ -233,7 +232,7 @@ public class GUI extends JFrame {
             final int finalNodes = nodes;
             final long finalTimeMs = timeMs;
             final String finalHeurName = (algoIdx != 0) ? heurName : null;
-            final String finalAlgoName = algoName.replaceAll("\\s+", ""); // Remove spaces for filename
+            final String finalAlgoName = algoName.replaceAll("\\s+", "");
 
             SwingUtilities.invokeLater(() -> {
                 if (finalSolution != null) {
@@ -241,14 +240,14 @@ public class GUI extends JFrame {
                     displaySolutionAnimation(path);
                     logArea.append("Solution: " + (path.size() - 1) + " moves.\n");
                     
-                    // Take screenshot of final state (with a delay to allow animation to complete)
+                    // Take screenshot of final state
                     new Thread(() -> {
                         try {
                             // Jump to the last state in the animation
                             boardPanel.updateBoard(path.get(path.size() - 1).getBoard());
-                            Thread.sleep(500); // Give UI time to update
+                            Thread.sleep(500);
                             takeScreenshot("final_" + finalAlgoName);
-                        } catch (Exception ex) {
+                        } catch (InterruptedException ex) {
                             SwingUtilities.invokeLater(() -> 
                                 logArea.append("Failed to capture final state screenshot: " + ex.getMessage() + "\n")
                             );
@@ -290,32 +289,76 @@ public class GUI extends JFrame {
     // Take screenshot of the application window
     private void takeScreenshot(String state) {
         try {
-            // Create screenshots directory if it doesn't exist
-            File screenshotDir = new File("screenshots");
-            if (!screenshotDir.exists()) {
-                screenshotDir.mkdir();
+            // Get current algorithm and heuristic names
+            String algoShortName;
+            String heurShortName;
+            String baseDir = "test" + File.separator + "output";
+            String targetDir;
+            
+            if (state.contains("final")) {
+                // Get algorithm short name
+                int algoIdx = algoSelector.getSelectedIndex();
+                switch (algoIdx) {
+                    case 0 -> algoShortName = "UCS";
+                    case 1 -> algoShortName = "GBFS";
+                    case 2 -> algoShortName = "AS";
+                    case 3 -> algoShortName = "IDAS";
+                    default -> algoShortName = "Unknown";
+                }
+                
+                // Get heuristic short name
+                if (algoIdx != 0) {
+                    int heurIdx = heuristicSelector.getSelectedIndex();
+                    switch (heurIdx) {
+                        case 0 -> heurShortName = "MD";
+                        case 1 -> heurShortName = "BP";
+                        case 2 -> heurShortName = "DB";
+                        default -> heurShortName = "Unknown";
+                    }
+                    
+                    // For final state
+                    targetDir = baseDir + File.separator + "final" + 
+                                File.separator + algoShortName + 
+                                File.separator + heurShortName;
+                } else {
+                    // For UCS with no heuristic
+                    targetDir = baseDir + File.separator + "final" + 
+                                File.separator + algoShortName;
+                }
+            } else {
+                // For initial state
+                targetDir = baseDir + File.separator + "initial";
             }
             
-            // Generate filename with timestamp
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            String timestamp = sdf.format(new Date());
+            // Create the directories if they don't exist
+            File outputDir = new File(targetDir);
+            if (!outputDir.exists()) {
+                outputDir.mkdirs();
+            }
             
-            // Format: screenshots/puzzlename_state_timestamp.png
-            String filename = String.format("screenshots/%s_%s_%s.png", 
-                                          currentPuzzleName != null ? currentPuzzleName : "puzzle", 
-                                          state, 
-                                          timestamp);
+            String filename = targetDir + File.separator + currentPuzzleName + ".png";
             
-            // Capture the entire frame
-            Rectangle rect = getBounds();
-            BufferedImage screenshot = new Robot().createScreenCapture(rect);
+            // Capture only the board panel
+            BufferedImage screenshot;
+            if (boardPanel != null) {
+                screenshot = new BufferedImage(
+                    boardPanel.getWidth(), 
+                    boardPanel.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB
+                );
+                
+                boardPanel.paint(screenshot.getGraphics());
+            } else {
+                // Fallback
+                screenshot = new Robot().createScreenCapture(getBounds());
+            }
             
             // Save to file
             File outputFile = new File(filename);
             ImageIO.write(screenshot, "png", outputFile);
-            logArea.append("Screenshot saved: " + outputFile.getName() + "\n");
+            logArea.append("Board screenshot saved: " + outputFile.getPath() + "\n");
             
-        } catch (Exception e) {
+        } catch (AWTException | IOException e) {
             logArea.append("Error taking screenshot: " + e.getMessage() + "\n");
         }
     }

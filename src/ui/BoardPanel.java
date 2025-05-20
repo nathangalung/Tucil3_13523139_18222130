@@ -84,14 +84,13 @@ public class BoardPanel extends JPanel {
         
         int rows = board.getRows();
         int cols = board.getCols();
+        char[][] grid = board.getGrid();
         
         // Draw grid cells
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
-                if (board.isRowSpaceOnly(r) || board.isColSpaceOnly(c)) {
-                    g2d.setColor(getBackground()); 
-                    g2d.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-                } else {
+                // Check if this is an empty cell
+                if (grid[r][c] == '.') {
                     g2d.setColor(Color.LIGHT_GRAY);
                     g2d.drawRect(c * cellSize, r * cellSize, cellSize, cellSize);
                 }
@@ -106,6 +105,7 @@ public class BoardPanel extends JPanel {
             int r = piece.getRow();
             int c = piece.getCol();
  
+            // Skip pieces that are completely off-board
             if (r < -piece.getSize() || r >= rows + piece.getSize() || 
                 c < -piece.getSize() || c >= cols + piece.getSize()){
                 continue;
@@ -139,7 +139,7 @@ public class BoardPanel extends JPanel {
         String kLabel = "K";
         int textWidth = fm.stringWidth(kLabel);
         int textHeight = fm.getAscent();
-        int kRectX = 0, kRectY = 0, kRectW = cellSize, kRectH = cellSize;
+        int kRectX, kRectY, kRectW = cellSize, kRectH = cellSize;
 
         // Determine K position
         if (exitC == cols) { kRectX = cols * cellSize; kRectY = exitR * cellSize; } // Right
