@@ -8,7 +8,7 @@ A Rush Hour puzzle solver using the A* algorithm.
 
 ## Description
 
-This program implements a solver for the Rush Hour puzzle game using the A* search algorithm. In Rush Hour, the player must move vehicles (represented by letters) on a grid to allow the primary vehicle (usually represented by 'P') to exit through a designated opening.
+This program implements a solver for the Rush Hour puzzle game using the many algorithm and heuristics. In Rush Hour, the player must move vehicles (represented by letters) on a grid to allow the primary vehicle (usually represented by 'P') to exit through a designated opening.
 
 The solver supports:
 - Multiple algorithm and heuristic functions
@@ -18,7 +18,7 @@ The solver supports:
 
 ## Features
 
-- **A* Path Finding**: Efficiently solves Rush Hour puzzles using the A* algorithm with custom heuristics
+- **Path Finding**: Efficiently solves Rush Hour puzzles using many algorithm with custom heuristics
 - **Interactive Mode**: GUI visualization showing the step-by-step solution
 - **Multiple Puzzle Support**: Reads and solves puzzles from text files
 - **Solution Statistics**: Provides metrics like number of moves, nodes explored, and execution time
