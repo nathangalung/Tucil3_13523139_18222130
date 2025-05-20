@@ -1,6 +1,9 @@
-3 3
-5
+6 7
+6
+.P...B.
+.P...B.
+.AAD.B.
+...DCCC
+...D.V.
+.XXX.V.
  K
-ABB
-CCD
-PPP

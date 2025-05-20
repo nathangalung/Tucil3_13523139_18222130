@@ -15,8 +15,14 @@ import heuristic.MD;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Rectangle;
+import java.awt.Robot;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -43,6 +49,7 @@ public class GUI extends JFrame {
     private JComboBox<String> heuristicSelector;
     private JLabel currentFileLabel;
     private Board currentBoard;
+    private String currentPuzzleName;  // Store current puzzle name for screenshots
 
     public GUI() {
         setTitle("Rush Hour Solver");
@@ -121,11 +128,14 @@ public class GUI extends JFrame {
         
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-            currentFileLabel.setText(file.getName());
+            String fileName = file.getName();
+            currentFileLabel.setText(fileName);
+            currentPuzzleName = fileName.replace(".txt", ""); // Store for screenshots
+            
             try {
                 currentBoard = new FileParser(file.getAbsolutePath()).parseFile();
                 displayBoard(currentBoard);
-                logArea.setText("Puzzle loaded: " + file.getName() + "\n");
+                logArea.setText("Puzzle loaded: " + fileName + "\n");
                 solveButton.setEnabled(true);
 
                 // Clear previous solution animation controls
@@ -138,9 +148,20 @@ public class GUI extends JFrame {
                 // After removing old controls, revalidate and repaint the container
                 solutionDisplayArea.revalidate();
                 solutionDisplayArea.repaint();
+                
+                // Take screenshot of initial state
+                SwingUtilities.invokeLater(() -> {
+                    try {
+                        // Small delay to ensure UI is fully drawn
+                        Thread.sleep(200);
+                        takeScreenshot("initial");
+                    } catch (Exception ex) {
+                        logArea.append("Failed to capture initial state screenshot: " + ex.getMessage() + "\n");
+                    }
+                });
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "File Load Error", JOptionPane.ERROR_MESSAGE);
-                logArea.setText("Error loading " + file.getName() + ": " + ex.getMessage() + "\n");
+                logArea.setText("Error loading " + fileName + ": " + ex.getMessage() + "\n");
                 currentBoard = null;
                 solveButton.setEnabled(false);
             }
@@ -212,16 +233,31 @@ public class GUI extends JFrame {
             final int finalNodes = nodes;
             final long finalTimeMs = timeMs;
             final String finalHeurName = (algoIdx != 0) ? heurName : null;
+            final String finalAlgoName = algoName.replaceAll("\\s+", ""); // Remove spaces for filename
 
             SwingUtilities.invokeLater(() -> {
                 if (finalSolution != null) {
                     List<GameState> path = finalSolution.getSolutionPath();
                     displaySolutionAnimation(path);
                     logArea.append("Solution: " + (path.size() - 1) + " moves.\n");
+                    
+                    // Take screenshot of final state (with a delay to allow animation to complete)
+                    new Thread(() -> {
+                        try {
+                            // Jump to the last state in the animation
+                            boardPanel.updateBoard(path.get(path.size() - 1).getBoard());
+                            Thread.sleep(500); // Give UI time to update
+                            takeScreenshot("final_" + finalAlgoName);
+                        } catch (Exception ex) {
+                            SwingUtilities.invokeLater(() -> 
+                                logArea.append("Failed to capture final state screenshot: " + ex.getMessage() + "\n")
+                            );
+                        }
+                    }).start();
                 } else {
                     logArea.append("No solution found.\n");
                 }
-                logArea.append("Algorithm: " + algoName + "\n");
+                logArea.append("Algorithm: " + finalAlgoName + "\n");
                 if (finalHeurName != null) logArea.append("Heuristic: " + finalHeurName + "\n");
                 logArea.append("Nodes visited: " + finalNodes + "\n");
                 logArea.append("Time: " + finalTimeMs + " ms\n");
@@ -249,6 +285,39 @@ public class GUI extends JFrame {
         solutionDisplayArea.repaint();
         pack();
         animation.start();
+    }
+
+    // Take screenshot of the application window
+    private void takeScreenshot(String state) {
+        try {
+            // Create screenshots directory if it doesn't exist
+            File screenshotDir = new File("screenshots");
+            if (!screenshotDir.exists()) {
+                screenshotDir.mkdir();
+            }
+            
+            // Generate filename with timestamp
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String timestamp = sdf.format(new Date());
+            
+            // Format: screenshots/puzzlename_state_timestamp.png
+            String filename = String.format("screenshots/%s_%s_%s.png", 
+                                          currentPuzzleName != null ? currentPuzzleName : "puzzle", 
+                                          state, 
+                                          timestamp);
+            
+            // Capture the entire frame
+            Rectangle rect = getBounds();
+            BufferedImage screenshot = new Robot().createScreenCapture(rect);
+            
+            // Save to file
+            File outputFile = new File(filename);
+            ImageIO.write(screenshot, "png", outputFile);
+            logArea.append("Screenshot saved: " + outputFile.getName() + "\n");
+            
+        } catch (Exception e) {
+            logArea.append("Error taking screenshot: " + e.getMessage() + "\n");
+        }
     }
 
     public static void main(String[] args) {

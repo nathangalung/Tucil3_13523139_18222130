@@ -1,8 +1,8 @@
-6 6
-8
- A..PPP
- A..B..
-KCCCB..
- ..DEEF
- ..D..F
- ..DGGF
+5 5
+6
+    K
+A..BB
+A.CCC
+DDDF.
+...FP
+.EEEP
